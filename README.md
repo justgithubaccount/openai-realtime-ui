@@ -124,9 +124,48 @@ The Webhook Manager allows you to configure custom API endpoints that the AI can
    - **Endpoint Key**: A unique identifier for the webhook (e.g., `btc-price`)
    - **URL**: The API endpoint URL (e.g., `https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd`)
    - **Method**: The HTTP method to use (GET/POST/ANY)
-   - **API Key**: Optional authentication key
+   - **Authentication Method**: Choose the appropriate authentication for your API:
+     - **No Authentication**: For public APIs that don't require authentication
+     - **API Key**: Send an API key in a custom header (default: X-API-Key)
+     - **Basic Auth**: Username/password authentication using the Basic scheme
+     - **Bearer Token**: JWT or OAuth token authentication using the Bearer scheme
+     - **Custom Header**: Any custom authentication header and value
    - **Description**: Detailed explanation of the webhook's purpose and required parameters
 
+All authentication credentials are stored securely in your browser's localStorage and are only sent to the specified API endpoints.
+
+### Example Webhook Configurations
+
+Here are some example webhook configurations for common APIs:
+
+#### Weather API with API Key
+```
+Endpoint Key: weather
+URL: https://api.weatherapi.com/v1/current.json
+Method: GET
+Auth Method: API Key
+API Key Header Name: key
+API Key: your_api_key_here
+```
+
+#### GitHub API with Bearer Token
+```
+Endpoint Key: github-repos
+URL: https://api.github.com/user/repos
+Method: GET
+Auth Method: Bearer Token
+Bearer Token: your_github_personal_access_token
+```
+
+#### Custom API with Basic Auth
+```
+Endpoint Key: private-api
+URL: https://your-api.example.com/data
+Method: GET
+Auth Method: Basic Auth
+Username: your_username
+Password: your_password
+```
 
 ## Advanced Features
 
