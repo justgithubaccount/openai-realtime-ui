@@ -7,6 +7,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const apiKey = process.env.OPENAI_API_KEY;
 const searxngUrl = process.env.SEARXNG_URL; 
+const openaiModel = process.env.OPENAI_REALTIME_MODEL || "gpt-4o-realtime-preview-2024-12-17";
 
 // Configure Vite middleware for React client with reduced logging
 const vite = await createViteServer({
@@ -54,13 +55,15 @@ app.post("/token", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-realtime-preview-2024-12-17",
+          model: openaiModel,
           voice: voice,
         }),
       },
     );
 
     const data = await response.json();
+    // Add the model to the response so client knows which model was used
+    data.model = openaiModel;
     res.json(data);
   } catch (error) {
     console.error("Token generation error:", error);
@@ -80,13 +83,15 @@ app.get("/token", async (req, res) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-realtime-preview-2024-12-17",
+          model: openaiModel,
           voice: "verse",
         }),
       },
     );
 
     const data = await response.json();
+    // Add the model to the response so client knows which model was used
+    data.model = openaiModel;
     res.json(data);
   } catch (error) {
     console.error("Token generation error:", error);
@@ -148,114 +153,6 @@ app.post("/api/search", async (req, res) => {
   }
 });
 
-// API proxy for CoinGecko cryptocurrency data
-app.get("/api/crypto/price", async (req, res) => {
-  // Default to bitcoin/usd if not specified
-  const ids = req.query.ids || 'bitcoin';
-  const vs_currencies = req.query.vs_currencies || 'usd';
-  
-  try {
-    console.log(`Fetching crypto price for ${ids} in ${vs_currencies}`);
-    
-    // Build the CoinGecko URL with query parameters
-    const url = new URL('https://api.coingecko.com/api/v3/simple/price');
-    url.searchParams.append('ids', ids);
-    url.searchParams.append('vs_currencies', vs_currencies);
-    
-    const response = await fetch(url.toString(), {
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0',
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`CoinGecko API returned status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log('CoinGecko response:', data);
-    res.json(data);
-    
-  } catch (error) {
-    console.error("CoinGecko proxy error:", error);
-    res.status(500).json({ error: `Failed to fetch crypto data: ${error.message}` });
-  }
-});
-
-// API proxy for geocoding (converting place names to coordinates)
-app.get("/api/geocode", async (req, res) => {
-  const query = req.query.q;
-  
-  if (!query) {
-    return res.status(400).json({ error: "Missing location query (q parameter)" });
-  }
-  
-  try {
-    console.log(`Geocoding location: ${query}`);
-    
-    // Build the Nominatim URL with query parameters
-    const params = new URLSearchParams({
-      q: query,
-      format: 'json',
-      limit: req.query.limit || '1'
-    });
-    
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-      headers: {
-        'User-Agent': 'YourApp/1.0 (your@email.com)', // OSM requires a User-Agent
-        'Accept': 'application/json'
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Geocoding API returned status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log(`Found ${data.length} locations for "${query}"`);
-    res.json(data);
-    
-  } catch (error) {
-    console.error("Geocoding proxy error:", error);
-    res.status(500).json({ error: `Failed to geocode location: ${error.message}` });
-  }
-});
-
-// API proxy for weather data
-app.get("/api/weather", async (req, res) => {
-  const { latitude, longitude } = req.query;
-  
-  if (!latitude || !longitude) {
-    return res.status(400).json({ error: "Missing required parameters: latitude and longitude" });
-  }
-  
-  try {
-    console.log(`Fetching weather for coordinates: ${latitude},${longitude}`);
-    
-    // Build the OpenMeteo URL with parameters
-    const params = new URLSearchParams({
-      latitude,
-      longitude,
-      current_weather: 'true',
-      ...req.query // Pass through any additional parameters
-    });
-    
-    const response = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`);
-    
-    if (!response.ok) {
-      throw new Error(`Weather API returned status ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log('Weather data retrieved successfully');
-    res.json(data);
-    
-  } catch (error) {
-    console.error("Weather API proxy error:", error);
-    res.status(500).json({ error: `Failed to fetch weather data: ${error.message}` });
-  }
-});
 
 // Universal webhook proxy - handles ANY external API
 app.all("/api/proxy", async (req, res) => {
