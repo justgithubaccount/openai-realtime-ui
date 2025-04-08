@@ -125,6 +125,7 @@ export default function App() {
 
   // Send a text message to the model
   function sendTextMessage(message) {
+    console.log("Sending text message:", message);
     const event = {
       type: "conversation.item.create",
       item: {
@@ -133,8 +134,16 @@ export default function App() {
         content: [{ type: "input_text", text: message }],
       },
     };
-
+    console.log("Text message event:", event);
     sendClientEvent(event);
+    
+    // After sending text, manually trigger a response from the AI
+    setTimeout(() => {
+      console.log("Sending response.create to trigger AI response");
+      sendClientEvent({
+        type: "response.create"
+      });
+    }, 100);
   }
 
   // Attach event listeners to the data channel when a new one is created
