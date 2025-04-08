@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    /* Apply base background and text colors using correct class names */
+    @apply bg-light-background dark:bg-dark-background; /* Uses keys 'light.background' and 'dark.background' */
+    @apply text-light-text dark:text-dark-text;       /* Uses keys 'light.text' and 'dark.text' */
+    /* Apply base font */
+    @apply font-sans;
+    /* Ensure full height */
+    @apply min-h-screen;
+  }
+
+  /* Optional: Basic scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary-100 dark:bg-dark-surface;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-secondary-300 dark:bg-dark-surface-alt rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-secondary-400 dark:bg-dark-border;
+  }
+}
+
