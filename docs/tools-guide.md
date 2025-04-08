@@ -310,9 +310,43 @@ webhook_call: {
         headers: { 'Content-Type': 'application/json' },
       };
       
-      // Add API key if provided
-      if (apiKey) {
-        options.headers['X-API-Key'] = apiKey;
+      // Apply authentication based on method
+      const authMethod = endpointConfig.authMethod || 'none';
+      switch (authMethod) {
+        case 'apiKey':
+          if (endpointConfig.apiKey) {
+            const headerName = endpointConfig.apiKeyHeaderName || 'X-API-Key';
+            options.headers[headerName] = endpointConfig.apiKey;
+            console.log(`Using API Key authentication with header: ${headerName}`);
+          }
+          break;
+        
+        case 'basicAuth':
+          if (endpointConfig.username) {
+            const credentials = btoa(`${endpointConfig.username}:${endpointConfig.password || ''}`);
+            options.headers['Authorization'] = `Basic ${credentials}`;
+            console.log('Using Basic Authentication');
+          }
+          break;
+        
+        case 'bearerToken':
+          if (endpointConfig.bearerToken) {
+            options.headers['Authorization'] = `Bearer ${endpointConfig.bearerToken}`;
+            console.log('Using Bearer Token authentication');
+          }
+          break;
+        
+        case 'customHeader':
+          if (endpointConfig.customHeaderName && endpointConfig.customHeaderValue) {
+            options.headers[endpointConfig.customHeaderName] = endpointConfig.customHeaderValue;
+            console.log(`Using Custom Header authentication: ${endpointConfig.customHeaderName}`);
+          }
+          break;
+        
+        case 'none':
+        default:
+          console.log('No authentication used');
+          break;
       }
       
       // Add payload for POST requests
@@ -477,7 +511,12 @@ The application includes a WebhookManager component that allows users to add, ed
 - Configure endpoint keys (used by the AI to reference the webhook)
 - Set the webhook URL
 - Specify required HTTP method (GET/POST/ANY)
-- Add optional API key for authentication
+- Choose from multiple authentication methods:
+  - **No Authentication**: For public APIs that don't require authentication
+  - **API Key**: Send an API key in a custom header (default: X-API-Key)
+  - **Basic Auth**: Username/password authentication using the Basic scheme
+  - **Bearer Token**: JWT or OAuth token authentication using the Bearer scheme
+  - **Custom Header**: Any custom authentication header and value
 - Provide detailed descriptions of required payload fields
 - Validate inputs to ensure proper configuration
 - Store configurations in localStorage for persistence
@@ -489,7 +528,7 @@ To use webhooks:
    - Endpoint key (e.g., "weather-api" or "n8n-brave-search")
    - URL (e.g., "https://your-api.com/endpoint")
    - HTTP method requirement (GET, POST, or Any)
-   - API key if needed (sent as X-API-Key header)
+   - Authentication method and credentials if needed
    - Detailed description of payload requirements
 
 3. In conversations with the AI, request the webhook by name:
@@ -515,31 +554,50 @@ For search-related webhooks:
 - Always include a "query" parameter in the payload
 - Make descriptions very explicit about payload requirements
 
-### 5. Non-Search Webhook Examples
+### 5. Webhook Examples with Authentication
 
-Here are some simple webhooks you can configure for testing:
+Here are some webhook examples showcasing different authentication methods:
 
-1. **Random Quote API:**
+1. **Public API (No Authentication):**
    - Key: `random-quote`
    - URL: `https://api.quotable.io/random`
    - Method: GET
+   - Auth Method: None
    - Description: "Returns a random quote. No payload required."
 
-2. **IP Geolocation:**
-   - Key: `ip-info`
-   - URL: `https://ipapi.co/json/`
+2. **Weather API with API Key:**
+   - Key: `weather-api`
+   - URL: `https://api.weatherapi.com/v1/current.json`
    - Method: GET
-   - Description: "Returns information about the current IP address location. No payload required."
+   - Auth Method: API Key
+   - API Key Header Name: key
+   - API Key: your_api_key_here
+   - Description: "Get current weather. Required payload: {'q': 'City name or coordinates'}"
 
-3. **Weather API:**
-   - Key: `open-weather`
-   - URL: `https://api.open-meteo.com/v1/forecast`
+3. **GitHub API with Bearer Token:**
+   - Key: `github-repos`
+   - URL: `https://api.github.com/user/repos`
    - Method: GET
-   - Description: "Get weather forecast. Required payload: {'latitude': number, 'longitude': number, 'current_weather': true}"
+   - Auth Method: Bearer Token
+   - Bearer Token: your_github_personal_access_token
+   - Description: "List your GitHub repositories. No payload required."
 
-4. **Exchange Rates:**
-   - Key: `exchange-rates`
-   - URL: `https://open.er-api.com/v6/latest/USD`
+4. **Private API with Basic Auth:**
+   - Key: `private-api`
+   - URL: `https://api.example.com/data`
    - Method: GET
-   - Description: "Returns current exchange rates with USD as base currency. No payload required." 
+   - Auth Method: Basic Auth
+   - Username: your_username
+   - Password: your_password
+   - Description: "Access private API data. No payload required."
+
+5. **Custom API with Custom Header:**
+   - Key: `custom-api`
+   - URL: `https://api.example.com/custom`
+   - Method: GET
+   - Auth Method: Custom Header
+   - Custom Header Name: X-Custom-Auth
+   - Custom Header Value: your_custom_token
+   - Description: "API using custom authentication header. No payload required."
+
 4. Persist their endpoints between sessions using localStorage 
