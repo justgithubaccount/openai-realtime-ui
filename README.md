@@ -3,7 +3,7 @@
 A feature-rich web application for interacting with OpenAI's Realtime API, featuring a flexible tools system and universal webhook integration.
 
 
-![realtime](client/assets/images/realtime.png)
+![openai-realtime-ui](client/assets/images/openai-realtime-ui.jpg)
 
 ## Features
 
