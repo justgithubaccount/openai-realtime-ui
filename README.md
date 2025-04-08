@@ -37,6 +37,7 @@ A feature-rich web application for interacting with OpenAI's Realtime API, featu
 3. Create a `.env` file in the project root with your API keys:
    ```
    OPENAI_API_KEY=your_openai_api_key_here
+   OPENAI_REALTIME_MODEL=your_openai_realtime_model_here
    SEARXNG_URL=your_searxng_url_here  # Optional
    ```
 
