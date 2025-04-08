@@ -501,7 +501,7 @@ export default function WebhookManager() {
             </div>
           </form>
     
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2 max-h-[30rem] overflow-y-auto">
             {Object.entries(webhookEndpoints).map(([key, config]) => {
               // Handle both new format (object with url/apiKey/method) and old format (string URL)
               const url = typeof config === 'string' ? config : config.url;
