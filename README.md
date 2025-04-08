@@ -51,6 +51,9 @@ A feature-rich web application for interacting with OpenAI's Realtime API, featu
 
 5. Open your browser and navigate to `http://localhost:3000`
 
+
+![UI](client/assets/images/ui.png)
+
 ## Docker Setup
 
 ### Development Environment (Recommended)
