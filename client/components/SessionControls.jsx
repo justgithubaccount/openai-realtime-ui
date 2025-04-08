@@ -5,7 +5,26 @@ import Button from "./Button";
 function SessionStopped({ startSession }) {
   const [isActivating, setIsActivating] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState("verse"); // Default voice
-  const [instructions, setInstructions] = useState(""); // Add state for instructions
+  const [instructions, setInstructions] = useState(
+    `You are a helpful assistant with access to several tools:
+1. web_search: Use this to find current information on the web if it's available
+2. generate_color_palette: Create color schemes when the user requests design help
+3. webhook_call: Connect to external APIs when needed
+
+Be proactive about using these tools when they would help answer a question. 
+For webhooks, suggest using them when the user needs real-time data like weather, crypto prices, or other external information.
+Always explain your reasoning before using a tool, and summarize the results in a helpful way.`
+  ); // Default system prompt
+
+  // Default instructions text for reset button
+  const defaultInstructions = `You are a helpful assistant with access to several tools:
+1. web_search: Use this to find current information on the web if it's available
+2. generate_color_palette: Create color schemes when the user requests design help
+3. webhook_call: Connect to external APIs when needed
+
+Be proactive about using these tools when they would help answer a question. 
+For webhooks, suggest using them when the user needs real-time data like weather, crypto prices, or other external information.
+Always explain your reasoning before using a tool, and summarize the results in a helpful way.`;
 
   const voices = [
     { id: "alloy", name: "Alloy (Female)" },
@@ -47,15 +66,33 @@ function SessionStopped({ startSession }) {
       </div>
       
       <div className="w-full max-w-md mb-2">
-        <label htmlFor="instructions" className="block text-sm text-secondary-700 dark:text-dark-text-secondary mb-1">
-          System Instructions (optional):
-        </label>
+        <div className="flex justify-between items-center mb-1">
+          <label htmlFor="instructions" className="block text-sm text-secondary-700 dark:text-dark-text-secondary">
+            System Instructions:
+          </label>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setInstructions("")} 
+              className="text-xs text-gray-600 dark:text-gray-400 hover:underline"
+              disabled={isActivating}
+            >
+              Clear
+            </button>
+            <button 
+              onClick={() => setInstructions(defaultInstructions)} 
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              disabled={isActivating}
+            >
+              Reset to Default
+            </button>
+          </div>
+        </div>
         <textarea
           id="instructions"
           value={instructions}
           onChange={(e) => setInstructions(e.target.value)}
           disabled={isActivating}
-          placeholder="You are a helpful assistant..."
+          placeholder="Enter system instructions..."
           className="w-full px-2 py-1 text-sm rounded border border-secondary-200 dark:border-dark-border bg-white dark:bg-dark-surface dark:text-dark-text h-24 resize-none"
         />
       </div>
