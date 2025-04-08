@@ -54,8 +54,17 @@ function cleanSearxngParams(params) {
 // Webhook fetching function
 async function callWebhook(method, endpointConfig, payload) {
   const url = typeof endpointConfig === 'string' ? endpointConfig : endpointConfig.url;
-  const apiKey = typeof endpointConfig === 'object' ? endpointConfig.apiKey : null;
   const description = typeof endpointConfig === 'object' ? endpointConfig.description : '';
+  
+  // Get authentication method and related properties
+  const authMethod = typeof endpointConfig === 'object' ? endpointConfig.authMethod || 'none' : 'none';
+  const apiKey = typeof endpointConfig === 'object' ? endpointConfig.apiKey : null;
+  const apiKeyHeaderName = typeof endpointConfig === 'object' ? endpointConfig.apiKeyHeaderName || 'X-API-Key' : 'X-API-Key';
+  const username = typeof endpointConfig === 'object' ? endpointConfig.username : null;
+  const password = typeof endpointConfig === 'object' ? endpointConfig.password : null;
+  const bearerToken = typeof endpointConfig === 'object' ? endpointConfig.bearerToken : null;
+  const customHeaderName = typeof endpointConfig === 'object' ? endpointConfig.customHeaderName : null;
+  const customHeaderValue = typeof endpointConfig === 'object' ? endpointConfig.customHeaderValue : null;
   
   // Always enforce the required method from the endpoint config
   const requiredMethod = typeof endpointConfig === 'object' && endpointConfig.method && endpointConfig.method !== 'ANY'
@@ -79,9 +88,41 @@ async function callWebhook(method, endpointConfig, payload) {
       'Content-Type': 'application/json'
     };
     
-    // Add API key header if present
-    if (apiKey) {
-      headers['X-API-Key'] = apiKey;
+    // Apply authentication based on method
+    switch (authMethod) {
+      case 'apiKey':
+        if (apiKey) {
+          headers[apiKeyHeaderName] = apiKey;
+          console.log(`Using API Key authentication with header: ${apiKeyHeaderName}`);
+        }
+        break;
+      
+      case 'basicAuth':
+        if (username) {
+          const credentials = btoa(`${username}:${password || ''}`);
+          headers['Authorization'] = `Basic ${credentials}`;
+          console.log('Using Basic Authentication');
+        }
+        break;
+      
+      case 'bearerToken':
+        if (bearerToken) {
+          headers['Authorization'] = `Bearer ${bearerToken}`;
+          console.log('Using Bearer Token authentication');
+        }
+        break;
+      
+      case 'customHeader':
+        if (customHeaderName && customHeaderValue) {
+          headers[customHeaderName] = customHeaderValue;
+          console.log(`Using Custom Header authentication: ${customHeaderName}`);
+        }
+        break;
+      
+      case 'none':
+      default:
+        console.log('No authentication used');
+        break;
     }
     
     let response;

@@ -30,7 +30,14 @@ export default function WebhookManager() {
     key: "",
     url: "",
     method: "ANY",
+    authMethod: "none", // Default to no authentication
+    apiKeyHeaderName: "X-API-Key", // Default header name
     apiKey: "",
+    username: "",
+    password: "",
+    bearerToken: "",
+    customHeaderName: "",
+    customHeaderValue: "",
     description: "",
   });
   const [errorMessage, setErrorMessage] = useState(null);
@@ -38,6 +45,7 @@ export default function WebhookManager() {
   const [editingKey, setEditingKey] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isTipsExpanded, setIsTipsExpanded] = useState(false); // Tips collapsed by default
 
   // Load saved endpoints on component mount
   useEffect(() => {
@@ -120,7 +128,14 @@ export default function WebhookManager() {
       const endpointConfig = {
         url: formData.url,
         method: formData.method,
+        authMethod: formData.authMethod,
+        apiKeyHeaderName: formData.apiKeyHeaderName,
         apiKey: formData.apiKey,
+        username: formData.username,
+        password: formData.password,
+        bearerToken: formData.bearerToken,
+        customHeaderName: formData.customHeaderName,
+        customHeaderValue: formData.customHeaderValue,
         description: formData.description,
       };
 
@@ -139,7 +154,14 @@ export default function WebhookManager() {
         key: "",
         url: "",
         method: "ANY",
+        authMethod: "none",
+        apiKeyHeaderName: "X-API-Key",
         apiKey: "",
+        username: "",
+        password: "",
+        bearerToken: "",
+        customHeaderName: "",
+        customHeaderValue: "",
         description: "",
       });
       setEditingKey(null);
@@ -161,7 +183,14 @@ export default function WebhookManager() {
       key: key,
       url: typeof config === 'string' ? config : config.url,
       method: typeof config === 'object' && config.method ? config.method : 'ANY',
+      authMethod: typeof config === 'object' ? config.authMethod : 'none',
+      apiKeyHeaderName: typeof config === 'object' ? config.apiKeyHeaderName : 'X-API-Key',
       apiKey: typeof config === 'object' ? config.apiKey : '',
+      username: typeof config === 'object' ? config.username : '',
+      password: typeof config === 'object' ? config.password : '',
+      bearerToken: typeof config === 'object' ? config.bearerToken : '',
+      customHeaderName: typeof config === 'object' ? config.customHeaderName : '',
+      customHeaderValue: typeof config === 'object' ? config.customHeaderValue : '',
       description: typeof config === 'object' ? config.description : '',
     });
     setIsExpanded(true); // Ensure form is visible when editing
@@ -262,17 +291,133 @@ export default function WebhookManager() {
               
               <div>
                 <label className="block mb-1 text-secondary-700 dark:text-dark-text">
-                  API Key (optional):
+                  Authentication Method:
                 </label>
-                <input
-                  type="text"
-                  name="apiKey"
-                  value={formData.apiKey}
+                <select
+                  name="authMethod"
+                  value={formData.authMethod}
                   onChange={handleInputChange}
-                  placeholder="Your API key (will be sent as X-API-Key header)"
                   className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-secondary-800 dark:text-dark-text bg-white dark:bg-dark-surface-alt"
-                />
+                >
+                  <option value="none">No Authentication</option>
+                  <option value="apiKey">API Key</option>
+                  <option value="basicAuth">Basic Auth</option>
+                  <option value="bearerToken">Bearer Token</option>
+                  <option value="customHeader">Custom Header</option>
+                </select>
               </div>
+              
+              {formData.authMethod === "apiKey" && (
+                <div>
+                  <label className="block mb-1 text-secondary-700 dark:text-dark-text">
+                    API Key Header Name:
+                  </label>
+                  <input
+                    type="text"
+                    name="apiKeyHeaderName"
+                    value={formData.apiKeyHeaderName}
+                    onChange={handleInputChange}
+                    placeholder="e.g., X-API-Key"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-secondary-800 dark:text-dark-text bg-white dark:bg-dark-surface-alt"
+                  />
+                </div>
+              )}
+              
+              {formData.authMethod === "apiKey" && (
+                <div>
+                  <label className="block mb-1 text-secondary-700 dark:text-dark-text">
+                    API Key:
+                  </label>
+                  <input
+                    type="text"
+                    name="apiKey"
+                    value={formData.apiKey}
+                    onChange={handleInputChange}
+                    placeholder="Your API key"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-secondary-800 dark:text-dark-text bg-white dark:bg-dark-surface-alt"
+                  />
+                </div>
+              )}
+              
+              {formData.authMethod === "basicAuth" && (
+                <div>
+                  <label className="block mb-1 text-secondary-700 dark:text-dark-text">
+                    Username:
+                  </label>
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    placeholder="Your username"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-secondary-800 dark:text-dark-text bg-white dark:bg-dark-surface-alt"
+                  />
+                </div>
+              )}
+              
+              {formData.authMethod === "basicAuth" && (
+                <div>
+                  <label className="block mb-1 text-secondary-700 dark:text-dark-text">
+                    Password:
+                  </label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Your password"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-secondary-800 dark:text-dark-text bg-white dark:bg-dark-surface-alt"
+                  />
+                </div>
+              )}
+              
+              {formData.authMethod === "bearerToken" && (
+                <div>
+                  <label className="block mb-1 text-secondary-700 dark:text-dark-text">
+                    Bearer Token:
+                  </label>
+                  <input
+                    type="text"
+                    name="bearerToken"
+                    value={formData.bearerToken}
+                    onChange={handleInputChange}
+                    placeholder="Your Bearer Token"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-secondary-800 dark:text-dark-text bg-white dark:bg-dark-surface-alt"
+                  />
+                </div>
+              )}
+              
+              {formData.authMethod === "customHeader" && (
+                <div>
+                  <label className="block mb-1 text-secondary-700 dark:text-dark-text">
+                    Custom Header Name:
+                  </label>
+                  <input
+                    type="text"
+                    name="customHeaderName"
+                    value={formData.customHeaderName}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Authorization"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-secondary-800 dark:text-dark-text bg-white dark:bg-dark-surface-alt"
+                  />
+                </div>
+              )}
+              
+              {formData.authMethod === "customHeader" && (
+                <div>
+                  <label className="block mb-1 text-secondary-700 dark:text-dark-text">
+                    Custom Header Value:
+                  </label>
+                  <input
+                    type="text"
+                    name="customHeaderValue"
+                    value={formData.customHeaderValue}
+                    onChange={handleInputChange}
+                    placeholder="e.g., Bearer token"
+                    className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded text-secondary-800 dark:text-dark-text bg-white dark:bg-dark-surface-alt"
+                  />
+                </div>
+              )}
               
               <div>
                 <label className="block mb-1 text-secondary-700 dark:text-dark-text">
@@ -302,7 +447,14 @@ export default function WebhookManager() {
                       key: "",
                       url: "",
                       method: "ANY",
+                      authMethod: "none",
+                      apiKeyHeaderName: "X-API-Key",
                       apiKey: "",
+                      username: "",
+                      password: "",
+                      bearerToken: "",
+                      customHeaderName: "",
+                      customHeaderValue: "",
                       description: "",
                     });
                     setFormErrors({});
@@ -321,13 +473,31 @@ export default function WebhookManager() {
             </div>
             
             <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800/30 rounded text-sm">
-              <h4 className="font-semibold mb-1 text-secondary-800 dark:text-dark-text">📝 Webhook Configuration Tips:</h4>
-              <ul className="list-disc pl-5 space-y-1 text-secondary-700 dark:text-dark-text-secondary">
-                <li>Use <strong>hyphens</strong> in endpoint keys (e.g., <code>n8n-brave-search</code>), not underscores.</li>
-                <li>For <strong>search endpoints</strong>, clearly describe that a <code>query</code> field is required.</li>
-                <li>For <strong>POST endpoints</strong>, specify all required payload fields and their formats.</li>
-                <li>Be precise with endpoint keys - the AI will use them exactly as configured.</li>
-              </ul>
+              <div 
+                className="flex items-center justify-between cursor-pointer" 
+                onClick={() => setIsTipsExpanded(!isTipsExpanded)}
+              >
+                <h4 className="font-semibold text-secondary-800 dark:text-dark-text flex items-center">
+                  📝 Webhook Configuration Tips
+                  <span className="ml-2 text-xs text-secondary-500 dark:text-dark-text-secondary">
+                    (click to {isTipsExpanded ? 'collapse' : 'expand'})
+                  </span>
+                </h4>
+                <button className="text-secondary-500 dark:text-dark-text-secondary">
+                  {isTipsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+              </div>
+              
+              {isTipsExpanded && (
+                <ul className="list-disc pl-5 space-y-1 text-secondary-700 dark:text-dark-text-secondary mt-2">
+                  <li>Use <strong>hyphens</strong> in endpoint keys (e.g., <code>n8n-brave-search</code>), not underscores.</li>
+                  <li>For <strong>search endpoints</strong>, clearly describe that a <code>query</code> field is required.</li>
+                  <li>For <strong>POST endpoints</strong>, specify all required payload fields and their formats.</li>
+                  <li>Choose the appropriate <strong>authentication method</strong> for your API.</li>
+                  <li>For security, endpoint configuration including credentials are only stored in your browser's localStorage.</li>
+                  <li>Be precise with endpoint keys - the AI will use them exactly as configured.</li>
+                </ul>
+              )}
             </div>
           </form>
     
@@ -335,9 +505,16 @@ export default function WebhookManager() {
             {Object.entries(webhookEndpoints).map(([key, config]) => {
               // Handle both new format (object with url/apiKey/method) and old format (string URL)
               const url = typeof config === 'string' ? config : config.url;
-              const apiKey = typeof config === 'object' ? config.apiKey : null;
               const method = typeof config === 'object' && config.method ? config.method : 'ANY';
               const description = typeof config === 'object' ? config.description : null;
+              
+              // Get authentication info
+              const authMethod = typeof config === 'object' ? config.authMethod || 'none' : 'none';
+              const apiKey = typeof config === 'object' ? config.apiKey : null;
+              const apiKeyHeaderName = typeof config === 'object' ? config.apiKeyHeaderName || 'X-API-Key' : 'X-API-Key';
+              const username = typeof config === 'object' ? config.username : null;
+              const bearerToken = typeof config === 'object' ? config.bearerToken : null;
+              const customHeaderName = typeof config === 'object' ? config.customHeaderName : null;
               
               return (
                 <div key={key} className="flex flex-col text-sm p-3 border rounded dark:border-dark-border">
@@ -366,9 +543,15 @@ export default function WebhookManager() {
                       <span className="font-semibold">Method:</span> {method} only
                     </span>
                   )}
-                  {apiKey && (
+                  {authMethod !== 'none' && (
                     <span className="text-xs text-green-500 dark:text-green-400 mt-1">
-                      <span className="font-semibold">Authentication:</span> Using X-API-Key
+                      <span className="font-semibold">Authentication:</span> {
+                        authMethod === 'apiKey' ? `API Key (${apiKeyHeaderName})` :
+                        authMethod === 'basicAuth' ? `Basic Auth (${username})` :
+                        authMethod === 'bearerToken' ? 'Bearer Token' :
+                        authMethod === 'customHeader' ? `Custom Header (${customHeaderName})` :
+                        'Unknown'
+                      }
                     </span>
                   )}
                   {description && (
