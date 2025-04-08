@@ -37,8 +37,9 @@ A feature-rich web application for interacting with OpenAI's Realtime API, featu
 3. Create a `.env` file in the project root with your API keys:
    ```
    OPENAI_API_KEY=your_openai_api_key_here
-   OPENAI_REALTIME_MODEL=your_openai_realtime_model_here
    SEARXNG_URL=your_searxng_url_here  # Optional
+   OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17  # Optional
+   PORT=3000  # Optional, defaults to 3000
    ```
 
 4. Start the development server:
@@ -47,6 +48,60 @@ A feature-rich web application for interacting with OpenAI's Realtime API, featu
    ```
 
 5. Open your browser and navigate to `http://localhost:3000`
+
+## Docker Setup
+
+### Development Environment (Recommended)
+
+For local development with hot reloading:
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/bigsk1/openai-realtime-ui.git
+   cd openai-realtime-ui
+   ```
+
+2. Create a `.env` file with your API keys:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   SEARXNG_URL=your_searxng_url_here  # Optional
+   OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17  # Optional, set to mini model for lower cost
+   ```
+
+3. Start the development container:
+   ```bash
+   docker-compose -f docker-compose.dev.yml up -d
+   ```
+
+4. Access the application at http://localhost:3000
+
+The development container mounts your local files, so any changes you make will trigger hot reloading.
+
+### Production Deployment
+
+For production deployment (such as on Coolify):
+
+1. Use the standard Dockerfile (not Dockerfile.dev)
+2. Set environment variables in your deployment platform
+3. The container will build and run the application in production mode
+
+```bash
+# Build the production image
+docker build -t openai-realtime-ui:production .
+
+# Run the production container
+docker run -p 3000:3000 \
+  -e OPENAI_API_KEY=your_key_here \
+  -e OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17 \
+  openai-realtime-ui:production
+```
+
+### Model Selection
+
+You can choose between different OpenAI Realtime models by setting the `OPENAI_REALTIME_MODEL` environment variable:
+
+- `gpt-4o-realtime-preview-2024-12-17` (default): More powerful model
+- `gpt-4o-mini-realtime-preview-2024-12-17`: Faster, lower cost model
 
 ## Tools System
 
@@ -69,7 +124,6 @@ The Webhook Manager allows you to configure custom API endpoints that the AI can
    - **Method**: The HTTP method to use (GET/POST/ANY)
    - **API Key**: Optional authentication key
    - **Description**: Detailed explanation of the webhook's purpose and required parameters
-
 
 
 ## Advanced Features
@@ -95,6 +149,8 @@ The AI can automatically chain multiple tools together. For example, when asking
 │   └── styles/       # CSS and styling
 ├── docs/             # Documentation
 ├── server.js         # Express server and API endpoints
+├── Dockerfile        # Docker configuration
+├── docker-compose.yml # Docker Compose configuration
 └── .env              # Environment variables (create this)
 ```
 
