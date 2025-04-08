@@ -5,21 +5,24 @@ import Button from "./Button";
 function SessionStopped({ startSession }) {
   const [isActivating, setIsActivating] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState("verse"); // Default voice
+  const [instructions, setInstructions] = useState(""); // Add state for instructions
 
   const voices = [
-    { id: "verse", name: "Verse (Male)" },
-    { id: "shimmer", name: "Shimmer (Female)" },
-    { id: "nova", name: "Nova (Female)" },
     { id: "alloy", name: "Alloy (Female)" },
+    { id: "ash", name: "Ash (Male)" },
+    { id: "ballad", name: "Ballad (Male)" },
+    { id: "coral", name: "Coral (Female)" },
     { id: "echo", name: "Echo (Male)" },
-    { id: "fable", name: "Fable (Male)" },
+    { id: "sage", name: "Sage (Female)" },
+    { id: "shimmer", name: "Shimmer (Female)" },
+    { id: "verse", name: "Verse (Male)" },
   ];
 
   function handleStartSession() {
     if (isActivating) return;
 
     setIsActivating(true);
-    startSession(selectedVoice);
+    startSession(selectedVoice, instructions); // Pass instructions to startSession
   }
 
   return (
@@ -41,6 +44,20 @@ function SessionStopped({ startSession }) {
             </option>
           ))}
         </select>
+      </div>
+      
+      <div className="w-full max-w-md mb-2">
+        <label htmlFor="instructions" className="block text-sm text-secondary-700 dark:text-dark-text-secondary mb-1">
+          System Instructions (optional):
+        </label>
+        <textarea
+          id="instructions"
+          value={instructions}
+          onChange={(e) => setInstructions(e.target.value)}
+          disabled={isActivating}
+          placeholder="You are a helpful assistant..."
+          className="w-full px-2 py-1 text-sm rounded border border-secondary-200 dark:border-dark-border bg-white dark:bg-dark-surface dark:text-dark-text h-24 resize-none"
+        />
       </div>
       
       <Button

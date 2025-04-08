@@ -15,7 +15,7 @@ export default function App() {
   const [toolsAdded, setToolsAdded] = useState([]);
   const [activeToolCall, setActiveToolCall] = useState(null);
 
-  async function startSession(voiceId = "verse") {
+  async function startSession(voiceId = "verse", instructions = "") {
     try {
       // Get a session token for OpenAI Realtime API
       const tokenResponse = await fetch("/token", {
@@ -23,7 +23,10 @@ export default function App() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ voice: voiceId })
+        body: JSON.stringify({ 
+          voice: voiceId,
+          instructions: instructions.trim() || undefined // Only send if not empty
+        })
       });
       
       const data = await tokenResponse.json();

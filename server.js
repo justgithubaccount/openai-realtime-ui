@@ -43,8 +43,19 @@ app.use(express.json());
 // API route for token generation
 app.post("/token", async (req, res) => {
   try {
-    const { voice = "verse" } = req.body;
-    console.log(`Generating token with voice: ${voice}`);
+    const { voice = "verse", instructions } = req.body;
+    console.log(`Generating token with voice: ${voice}${instructions ? " and custom instructions" : ""}`);
+    
+    // Build request body with optional instructions
+    const requestBody = {
+      model: openaiModel,
+      voice: voice,
+    };
+    
+    // Only add instructions if provided
+    if (instructions) {
+      requestBody.instructions = instructions;
+    }
     
     const response = await fetch(
       "https://api.openai.com/v1/realtime/sessions",
@@ -54,10 +65,7 @@ app.post("/token", async (req, res) => {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: openaiModel,
-          voice: voice,
-        }),
+        body: JSON.stringify(requestBody),
       },
     );
 
@@ -74,6 +82,20 @@ app.post("/token", async (req, res) => {
 // For backward compatibility, also support GET
 app.get("/token", async (req, res) => {
   try {
+    // Get instructions from query params if available
+    const instructions = req.query.instructions;
+    
+    // Build request body with optional instructions
+    const requestBody = {
+      model: openaiModel,
+      voice: "verse",
+    };
+    
+    // Only add instructions if provided
+    if (instructions) {
+      requestBody.instructions = instructions;
+    }
+    
     const response = await fetch(
       "https://api.openai.com/v1/realtime/sessions",
       {
@@ -82,10 +104,7 @@ app.get("/token", async (req, res) => {
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model: openaiModel,
-          voice: "verse",
-        }),
+        body: JSON.stringify(requestBody),
       },
     );
 
