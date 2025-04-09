@@ -4,7 +4,6 @@ import EventLog from "./EventLog";
 import SessionControls from "./SessionControls";
 import ToolPanel from "./ToolPanel";
 import DarkModeToggle from "./DarkModeToggle";
-import { MessageSquare } from "lucide-react";
 
 // Audio Waveform component to visualize AI speaking
 function AudioWaveform({ isActive }) {
@@ -257,10 +256,23 @@ export default function App() {
       {/* Header */}
       <nav className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-secondary-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-sm z-10">
         <div className="flex items-center gap-3">
-          <MessageSquare className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-          <h1 className="text-lg font-semibold text-secondary-800 dark:text-dark-text">Realtime Chat Console</h1>
+          <img src={logo} alt="Realtime Chat Logo" className="w-6 h-6" />
+          <h1 className="text-lg font-semibold text-secondary-800 dark:text-dark-text">Realtime UI</h1>
         </div>
-        <DarkModeToggle />
+        <div className="flex items-center gap-3">
+          <a 
+            href="https://github.com/bigsk1/openai-realtime-ui" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 transition-colors"
+            aria-label="GitHub Repository"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+            </svg>
+          </a>
+          <DarkModeToggle />
+        </div>
       </nav>
 
       {/* Main Content Area */}
@@ -271,7 +283,7 @@ export default function App() {
             {isSessionActive && <AudioWaveform isActive={isAISpeaking} />}
             <EventLog events={events} />
           </div>
-          <div className="flex-shrink-0 p-3 border-t border-secondary-200 dark:border-dark-border bg-white dark:bg-dark-surface">
+          <div className="flex-shrink-0 p-3 pb-6 border-t border-secondary-200 dark:border-dark-border bg-white dark:bg-dark-surface">
             <SessionControls
               startSession={startSession}
               stopSession={stopSession}
