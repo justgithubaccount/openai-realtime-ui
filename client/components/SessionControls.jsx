@@ -6,21 +6,15 @@ function SessionStopped({ startSession }) {
   const [isActivating, setIsActivating] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState("verse"); // Default voice
   const [instructions, setInstructions] = useState(
-    `You are a helpful assistant with access to several tools:
-1. web_search: Use this to find current information on the web if it's available
-2. generate_color_palette: Create color schemes when the user requests design help
-3. webhook_call: Connect to external APIs when needed
+    `You are a helpful assistant with access to several tools.
 
 Be proactive about using these tools when they would help answer a question. 
-For webhooks, suggest using them when the user needs real-time data like weather, crypto prices, or other external information.
+For webhooks, suggest using them when the user needs real-time data or other external information.
 Always explain your reasoning before using a tool, and summarize the results in a helpful way.`
   ); // Default system prompt
 
   // Default instructions text for reset button
-  const defaultInstructions = `You are a helpful assistant with access to several tools:
-1. web_search: Use this to find current information on the web if it's available
-2. generate_color_palette: Create color schemes when the user requests design help
-3. webhook_call: Connect to external APIs when needed
+  const defaultInstructions = `You are a helpful assistant with access to several tools.
 
 Be proactive about using these tools when they would help answer a question. 
 For webhooks, suggest using them when the user needs real-time data like weather, crypto prices, or other external information.
