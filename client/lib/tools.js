@@ -469,13 +469,144 @@ export const tools = {
     OutputComponent: 'WebhookResultOutput', 
   },
 
-  // --- Add more tools here in the future ---
-  // example_tool: {
-  //   definition: { ... },
-  //   execute: async (args) => { ... },
-  //   OutputComponent: 'ExampleToolOutput',
-  //   requiredEnvVars: ['EXAMPLE_API_KEY'],
-  // },
+  // Current datetime tool that provides precise time information
+  current_datetime: {
+    definition: {
+      type: "function",
+      name: "current_datetime",
+      description: "Get the current date and time in various formats and timezones. Use this when you need to know the exact current time.",
+      parameters: {
+        type: "object",
+        strict: true,
+        properties: {
+          format: {
+            type: "string",
+            description: "Optional format for the date/time. Defaults to ISO format if not specified.",
+            enum: ["iso", "human", "unix", "date", "time"],
+          },
+          timezone: {
+            type: "string",
+            description: "Optional timezone for the returned time. Defaults to local timezone if not specified.",
+            enum: ["local", "utc", "est", "cst", "mst", "pst"]
+          }
+        },
+        required: [],
+      },
+    },
+    execute: async (args) => {
+      try {
+        const format = args.format || "iso";
+        const timezone = args.timezone || "local";
+        
+        // Get current date
+        const now = new Date();
+        
+        // Handle timezone
+        let dateInTz = now;
+        if (timezone !== "local") {
+          const options = { timeZone: getTimeZoneString(timezone) };
+          dateInTz = new Date(new Date().toLocaleString('en-US', options));
+        }
+        
+        // Format the date
+        let formattedDate;
+        switch (format) {
+          case "human":
+            formattedDate = dateInTz.toLocaleString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric',
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+              timeZoneName: 'short'
+            });
+            break;
+          case "unix":
+            formattedDate = Math.floor(dateInTz.getTime() / 1000);
+            break;
+          case "date":
+            formattedDate = dateInTz.toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            });
+            break;
+          case "time":
+            formattedDate = dateInTz.toLocaleTimeString('en-US', { 
+              hour: 'numeric',
+              minute: 'numeric',
+              second: 'numeric',
+              timeZoneName: 'short'
+            });
+            break;
+          case "iso":
+          default:
+            formattedDate = dateInTz.toISOString();
+            break;
+        }
+        
+        return { 
+          status: 'success', 
+          content: JSON.stringify({
+            current: formattedDate,
+            timezone: timezone,
+            format: format,
+            timestamp: Math.floor(now.getTime() / 1000)
+          })
+        };
+      } catch (error) {
+        console.error("Date/time tool failed:", error);
+        return {
+          status: 'error',
+          content: JSON.stringify({ error: error.message || "Failed to get current date and time" })
+        };
+      }
+    },
+    OutputComponent: 'DateTimeOutput',
+    // No environment variables required - always available
+    requiredEnvVars: [],
+  },
+  
+  // === NEW TOOL PLACEHOLDER ===
+  // Uncomment and modify this template to add a new tool
+  /*
+  my_new_tool: {
+    definition: {
+      type: "function",
+      name: "my_new_tool",
+      description: "Description of what your tool does",
+      parameters: {
+        type: "object",
+        strict: true,
+        properties: {
+          // Define your parameters here
+        },
+        required: [], // List required parameters
+      },
+    },
+    execute: async (args) => {
+      try {
+        // Your tool implementation
+        return { 
+          status: 'success', 
+          content: JSON.stringify({ result: "your result here" }) 
+        };
+      } catch (error) {
+        return {
+          status: 'error',
+          content: JSON.stringify({ error: error.message })
+        };
+      }
+    },
+    OutputComponent: 'MyNewToolOutput',
+    requiredEnvVars: [], // List any required env variables or [] for none
+  },
+  */
+  
+  // Other existing tools...
 };
 
 // Check if required environment variables are set for a tool
@@ -528,4 +659,18 @@ export const getAllToolDefinitions = () => {
     console.warn("Error determining enabled tools:", error);
     return Object.values(tools).map(tool => tool.definition);
   }
-}; 
+};
+
+// Helper function to map timezone abbreviations to full timezone strings
+function getTimeZoneString(timezone) {
+  const tzMap = {
+    'utc': 'UTC',
+    'est': 'America/New_York',
+    'cst': 'America/Chicago',
+    'mst': 'America/Denver',
+    'pst': 'America/Los_Angeles',
+    'local': Intl.DateTimeFormat().resolvedOptions().timeZone
+  };
+  
+  return tzMap[timezone.toLowerCase()] || tzMap.local;
+} 

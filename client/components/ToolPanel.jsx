@@ -238,12 +238,60 @@ function ErrorOutput({ error }) {
   );
 }
 
+function DateTimeOutput({ toolCall, toolResult, isLoading }) {
+  // Parse arguments from the tool call
+  const args = JSON.parse(toolCall.arguments || '{}');
+  const format = args.format || "iso";
+  const timezone = args.timezone || "local";
+  
+  // Get results from toolResult
+  let results = null;
+  if (toolResult && !isLoading) {
+    try {
+      if (typeof toolResult.data === 'string') {
+        results = JSON.parse(toolResult.data);
+      } else if (toolResult.data) {
+        results = toolResult.data;
+      }
+    } catch (error) {
+      console.error("Error parsing datetime results:", error);
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-md font-semibold">Current Date & Time</h3>
+        {results && (
+          <div className="text-xs text-secondary-500">
+            {results.timezone.toUpperCase()} / {results.format.toUpperCase()}
+          </div>
+        )}
+      </div>
+      
+      {isLoading ? (
+        <div className="text-sm text-secondary-500 animate-pulse">
+          Retrieving current time...
+        </div>
+      ) : results ? (
+        <div className="bg-secondary-50 dark:bg-dark-surface-alt p-3 rounded">
+          <div className="text-lg font-mono">{results.current}</div>
+          <div className="text-xs text-secondary-500 mt-1">Unix timestamp: {results.timestamp}</div>
+        </div>
+      ) : (
+        <div className="text-sm text-secondary-500">Could not retrieve time information</div>
+      )}
+    </div>
+  );
+}
+
 // Map component names (strings from registry) to actual components
 const OutputComponents = {
   ColorPaletteOutput,
   WebSearchResultsOutput,
   WebhookResultOutput,
   ErrorOutput,
+  DateTimeOutput,
   // Add other output components here
 };
 // -------------------------------------------------------
