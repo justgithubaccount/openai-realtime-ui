@@ -198,14 +198,18 @@ export default function App() {
       dataChannel.close();
     }
 
-    peerConnection.current.getSenders().forEach((sender) => {
-      if (sender.track) {
-        sender.track.stop();
-      }
-    });
-
+    // Safely access peerConnection and its methods
     if (peerConnection.current) {
-      peerConnection.current.close();
+      try {
+        peerConnection.current.getSenders().forEach((sender) => {
+          if (sender && sender.track) {
+            sender.track.stop();
+          }
+        });
+        peerConnection.current.close();
+      } catch (error) {
+        console.warn("Error during peer connection cleanup:", error.message);
+      }
     }
 
     setIsSessionActive(false);

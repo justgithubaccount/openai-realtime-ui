@@ -277,10 +277,10 @@ app.get('/api/config', (req, res) => {
     // Add other env vars that tools might depend on
   };
   
-  console.log("Sending config to client:", { 
-    searxng: !!process.env.SEARXNG_URL,
-    env_vars_present: Object.keys(availableEnvVars).filter(key => availableEnvVars[key])
-  });
+  // console.log("Sending config to client:", { 
+  //   searxng: !!process.env.SEARXNG_URL,
+  //   env_vars_present: Object.keys(availableEnvVars).filter(key => availableEnvVars[key])
+  // });
   
   res.json({ availableEnvVars });
 });

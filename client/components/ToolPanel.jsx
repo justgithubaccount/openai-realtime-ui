@@ -64,10 +64,10 @@ function WebSearchResultsOutput({ toolCall, toolResult, isLoading }) {
   if (toolResult) {
     try {
       // Reduced logging - just log once at the beginning
-      console.log("Processing search results:", 
-        typeof toolResult.data === 'object' ? '[Object]' : 
-        typeof toolResult.data === 'string' ? '[String]' : 
-        typeof toolResult.data);
+      // console.log("Processing search results:", 
+      //   typeof toolResult.data === 'object' ? '[Object]' : 
+      //   typeof toolResult.data === 'string' ? '[String]' : 
+      //   typeof toolResult.data);
       
       if (typeof toolResult.data === 'string') {
         // If data is a JSON string, parse it
@@ -155,7 +155,7 @@ function WebhookResultOutput({ toolCall, toolResult }) {
   if (toolResult) {
     try {
       // Simplified logging - just log once
-      console.log("Processing webhook result:", typeof toolResult.data);
+      // console.log("Processing webhook result:", typeof toolResult.data);
       
       if (typeof toolResult.data === 'string') {
         // If data is a JSON string, try to parse it
@@ -432,7 +432,7 @@ export default function ToolPanel({
     // 1. A new session is starting, OR
     // 2. Env vars changed and are different from what we last sent
     if (isSessionNew || (Object.keys(envVars).length > 0 && envHash !== lastSentEnvHash)) {
-      console.log("Updating tool definitions - new session or env vars changed");
+      // console.log("Updating tool definitions - new session or env vars changed");
       sendClientEvent(sessionUpdatePayload);
       setToolsAdded(true);
       setLastSentEnvHash(envHash);

@@ -724,6 +724,16 @@ export const tools = {
     OutputComponent: 'ClipboardOutput',
     // No environment variables required - always available
     requiredEnvVars: [],
+    // Make sure the clipboard is initialized properly
+    initialize: () => {
+      // Only initialize if clipboard history is empty
+      if (!localStorage.getItem('clipboardHistory') || localStorage.getItem('clipboardHistory') === '[]') {
+        // console.log("Clipboard history not found, initializing empty history");
+        localStorage.setItem('clipboardHistory', '[]');
+      } else {
+        // console.log("Found existing clipboard history, preserving it");
+      }
+    },
   },
   
   // === NEW TOOL PLACEHOLDER ===
@@ -770,12 +780,12 @@ const isToolEnabled = (tool) => {
   // During server-side rendering, consider all tools enabled
   // This will be refined when the client loads
   if (typeof window === 'undefined') {
-    console.log(`SSR: Temporarily enabling ${tool.definition.name}`);
+    // console.log(`SSR: Temporarily enabling ${tool.definition.name}`);
     return true;
   }
   
   if (!tool.requiredEnvVars || tool.requiredEnvVars.length === 0) {
-    console.log(`${tool.definition.name}: No env vars required`);
+    // console.log(`${tool.definition.name}: No env vars required`);
     return true; // Tool doesn't require any env vars
   }
   
@@ -787,8 +797,8 @@ const isToolEnabled = (tool) => {
     const envVars = window.__ENV__ || {};
     // Only include env vars that are actually true (available)
     availableEnvVars = Object.keys(envVars).filter(key => envVars[key] === true);
-    console.log(`${tool.definition.name}: Checking required env vars:`, tool.requiredEnvVars);
-    console.log(`${tool.definition.name}: Available env vars:`, availableEnvVars);
+    // console.log(`${tool.definition.name}: Checking required env vars:`, tool.requiredEnvVars);
+    // console.log(`${tool.definition.name}: Available env vars:`, availableEnvVars);
   } catch (e) {
     console.warn(`${tool.definition.name}: Could not access environment variables:`, e);
     return false;
@@ -796,7 +806,7 @@ const isToolEnabled = (tool) => {
   
   // Check if all required env vars are available
   const enabled = tool.requiredEnvVars.every(varName => availableEnvVars.includes(varName));
-  console.log(`${tool.definition.name}: Enabled = ${enabled}`);
+  // console.log(`${tool.definition.name}: Enabled = ${enabled}`);
   return enabled;
 };
 
@@ -806,7 +816,7 @@ export const getAllToolDefinitions = () => {
     // Filter tools to only include those with all required env vars available
     const enabledTools = Object.values(tools).filter(isToolEnabled);
     if (typeof window !== 'undefined') { // Only log in browser environment
-      console.log(`Enabled tools: ${enabledTools.map(t => t.definition.name).join(', ')}`);
+      // console.log(`Enabled tools: ${enabledTools.map(t => t.definition.name).join(', ')}`);
     }
     
     return enabledTools.map(tool => tool.definition);
