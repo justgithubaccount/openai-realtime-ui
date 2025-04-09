@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react"; // Import icons for expand/collapse
+import Button from "./Button";
+import CryptoJS from 'crypto-js';
 
 // Add a simple Tooltip component
 function Tooltip({ text, children }) {
@@ -46,6 +48,12 @@ export default function WebhookManager() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isTipsExpanded, setIsTipsExpanded] = useState(false); // Tips collapsed by default
+  const fileInputRef = useRef(null); // Reference for hidden file input
+  const [showEncryptModal, setShowEncryptModal] = useState(false);
+  const [encryptPassword, setEncryptPassword] = useState("");
+  const [decryptPassword, setDecryptPassword] = useState("");
+  const [showDecryptModal, setShowDecryptModal] = useState(false);
+  const [fileToImport, setFileToImport] = useState(null);
 
   // Load saved endpoints on component mount
   useEffect(() => {
@@ -121,58 +129,106 @@ export default function WebhookManager() {
 
   const addOrUpdateEndpoint = () => {
     try {
-      // Format the endpoint key for consistency
+      // Validate form fields
+      if (!formData.key.trim()) {
+        throw new Error("Endpoint key is required");
+      } else if (formData.key.includes('_')) {
+        throw new Error("Endpoint key should not contain underscores");
+      }
+      
+      if (!formData.url.trim()) {
+        throw new Error("URL is required");
+      }
+      
+      try {
+        new URL(formData.url); // Validates URL format
+      } catch (urlError) {
+        throw new Error("Please enter a valid URL");
+      }
+      
+      // Warn about missing payload info for POST endpoints
+      if (formData.method === "POST" && (!formData.description || formData.description.trim().length < 10)) {
+        if (!window.confirm("POST endpoints should include payload details in the description. Continue anyway?")) {
+          return;
+        }
+      }
+      
+      // Check if search endpoint has 'query' in description
+      if (formData.key.toLowerCase().includes('search') && (!formData.description || !formData.description.toLowerCase().includes('query'))) {
+        if (!window.confirm("Search endpoints should mention 'query' parameter in the description. Continue anyway?")) {
+          return;
+        }
+      }
+      
       const formattedKey = formatEndpointKey(formData.key);
       
-      // Create the normalized endpoint config
-      const endpointConfig = {
-        url: formData.url,
-        method: formData.method,
-        authMethod: formData.authMethod,
-        apiKeyHeaderName: formData.apiKeyHeaderName,
-        apiKey: formData.apiKey,
-        username: formData.username,
-        password: formData.password,
-        bearerToken: formData.bearerToken,
-        customHeaderName: formData.customHeaderName,
-        customHeaderValue: formData.customHeaderValue,
-        description: formData.description,
-      };
-
-      // Update the state with the new endpoint
+      // When editing, preserve existing credentials if masked
+      let apiKey = formData.apiKey;
+      let password = formData.password;
+      let bearerToken = formData.bearerToken;
+      let customHeaderValue = formData.customHeaderValue;
+      
+      // If we're editing an existing webhook
+      if (editingKey && webhookEndpoints[editingKey]) {
+        const existingConfig = webhookEndpoints[editingKey];
+        
+        // Don't overwrite credentials with masked placeholders
+        if (formData.apiKey === '••••••••••••••••' && existingConfig.apiKey) {
+          apiKey = existingConfig.apiKey;
+        }
+        
+        if (formData.password === '••••••••••••••••' && existingConfig.password) {
+          password = existingConfig.password;
+        }
+        
+        if (formData.bearerToken === '••••••••••••••••' && existingConfig.bearerToken) {
+          bearerToken = existingConfig.bearerToken;
+        }
+        
+        if (formData.customHeaderValue === '••••••••••••••••' && 
+            (existingConfig.customHeaderName.toLowerCase().includes('token') || 
+             existingConfig.customHeaderName.toLowerCase().includes('key') || 
+             existingConfig.customHeaderName.toLowerCase().includes('auth'))) {
+          customHeaderValue = existingConfig.customHeaderValue;
+        }
+      }
+      
+      // Create updated endpoints object
       const updatedEndpoints = {
         ...webhookEndpoints,
-        [formattedKey]: endpointConfig,
+        [formattedKey]: {
+          url: formData.url,
+          method: formData.method,
+          authMethod: formData.authMethod,
+          apiKeyHeaderName: formData.apiKeyHeaderName,
+          apiKey: apiKey,
+          username: formData.username,
+          password: password,
+          bearerToken: bearerToken,
+          customHeaderName: formData.customHeaderName,
+          customHeaderValue: customHeaderValue,
+          description: formData.description,
+        },
       };
-
-      // Save to localStorage and update state
-      localStorage.setItem("webhookEndpoints", JSON.stringify(updatedEndpoints));
-      setWebhookEndpoints(updatedEndpoints);
-
-      // Reset form and clear any errors
-      setFormData({
-        key: "",
-        url: "",
-        method: "ANY",
-        authMethod: "none",
-        apiKeyHeaderName: "X-API-Key",
-        apiKey: "",
-        username: "",
-        password: "",
-        bearerToken: "",
-        customHeaderName: "",
-        customHeaderValue: "",
-        description: "",
-      });
-      setEditingKey(null);
-      setFormErrors({});
       
-      // Show success message
-      setErrorMessage(`Webhook endpoint "${formattedKey}" saved successfully`);
+      // If we're renaming the endpoint key
+      if (editingKey && editingKey !== formattedKey) {
+        delete updatedEndpoints[editingKey];
+      }
+      
+      // Update state and localStorage
+      setWebhookEndpoints(updatedEndpoints);
+      localStorage.setItem("webhookEndpoints", JSON.stringify(updatedEndpoints));
+      
+      // Reset form and editing state
+      resetForm();
+      setEditingKey(null);
+      setErrorMessage(`Webhook endpoint ${formattedKey} has been saved`);
       setTimeout(() => setErrorMessage(null), 3000);
-    } catch (e) {
-      console.error("Error saving webhook endpoint", e);
-      setErrorMessage("Failed to save webhook endpoint: " + e.message);
+      
+    } catch (error) {
+      console.error("Error adding webhook endpoint:", error);
+      setErrorMessage(error.message);
     }
   };
 
@@ -180,17 +236,26 @@ export default function WebhookManager() {
     const config = webhookEndpoints[key];
     setEditingKey(key);
     setFormData({
-      key: key,
-      url: typeof config === 'string' ? config : config.url,
-      method: typeof config === 'object' && config.method ? config.method : 'ANY',
-      authMethod: typeof config === 'object' ? config.authMethod : 'none',
+      key,
+      url: typeof config === 'object' ? config.url : config,
+      method: typeof config === 'object' ? config.method : 'ANY',
+      authMethod: typeof config === 'object' ? config.authMethod || 'none' : 'none',
       apiKeyHeaderName: typeof config === 'object' ? config.apiKeyHeaderName : 'X-API-Key',
-      apiKey: typeof config === 'object' ? config.apiKey : '',
+      // Mask sensitive fields with placeholders instead of showing actual values
+      apiKey: typeof config === 'object' && config.apiKey ? '••••••••••••••••' : '',
       username: typeof config === 'object' ? config.username : '',
-      password: typeof config === 'object' ? config.password : '',
-      bearerToken: typeof config === 'object' ? config.bearerToken : '',
+      // Mask password field if it exists
+      password: typeof config === 'object' && config.password ? '••••••••••••••••' : '',
+      // Mask bearer token if it exists
+      bearerToken: typeof config === 'object' && config.bearerToken ? '••••••••••••••••' : '',
+      // Mask custom header value if it looks like a credential
       customHeaderName: typeof config === 'object' ? config.customHeaderName : '',
-      customHeaderValue: typeof config === 'object' ? config.customHeaderValue : '',
+      customHeaderValue: typeof config === 'object' ? 
+        (config.customHeaderValue && 
+         (config.customHeaderName.toLowerCase().includes('token') || 
+          config.customHeaderName.toLowerCase().includes('key') || 
+          config.customHeaderName.toLowerCase().includes('auth')) ? 
+         '••••••••••••••••' : config.customHeaderValue) : '',
       description: typeof config === 'object' ? config.description : '',
     });
     setIsExpanded(true); // Ensure form is visible when editing
@@ -213,6 +278,138 @@ export default function WebhookManager() {
     </div>
   );
 
+  const exportWebhooks = () => {
+    setShowEncryptModal(true);
+  };
+  
+  const processExport = (useEncryption = false) => {
+    try {
+      const webhooksJson = JSON.stringify(webhookEndpoints, null, 2);
+      let finalData = webhooksJson;
+      let filename = "webhook_endpoints.json";
+      
+      if (useEncryption && encryptPassword) {
+        finalData = CryptoJS.AES.encrypt(webhooksJson, encryptPassword).toString();
+        filename = "webhook_endpoints_encrypted.json";
+      }
+      
+      const blob = new Blob([finalData], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      setShowEncryptModal(false);
+      setEncryptPassword("");
+    } catch (error) {
+      console.error("Error exporting webhooks:", error);
+      alert("Failed to export webhooks!");
+    }
+  };
+
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setFileToImport(file);
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const content = e.target.result;
+        
+        try {
+          const parsedData = JSON.parse(content);
+          importWebhooks(parsedData);
+        } catch (error) {
+          setShowDecryptModal(true);
+        }
+      };
+      
+      reader.readAsText(file);
+    }
+  };
+  
+  const processImport = () => {
+    if (!fileToImport) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target.result;
+      
+      try {
+        const decrypted = CryptoJS.AES.decrypt(content, decryptPassword).toString(CryptoJS.enc.Utf8);
+        if (!decrypted) {
+          throw new Error("Decryption failed - incorrect password");
+        }
+        
+        const parsedData = JSON.parse(decrypted);
+        importWebhooks(parsedData);
+        
+        setShowDecryptModal(false);
+        setDecryptPassword("");
+        setFileToImport(null);
+      } catch (error) {
+        console.error("Error decrypting file:", error);
+        alert("Failed to decrypt file. Please check your password and try again.");
+      }
+    };
+    
+    reader.readAsText(fileToImport);
+  };
+
+  const importWebhooks = (data) => {
+    try {
+      if (typeof data !== "object" || data === null) {
+        throw new Error("Invalid webhook data format");
+      }
+
+      let isValid = true;
+      Object.values(data).forEach((endpoint) => {
+        if (!endpoint.url || !endpoint.method) {
+          isValid = false;
+        }
+      });
+
+      if (!isValid) {
+        throw new Error("Invalid webhook endpoint data");
+      }
+
+      const updatedWebhooks = { ...webhookEndpoints, ...data };
+      setWebhookEndpoints(updatedWebhooks);
+      localStorage.setItem("webhookEndpoints", JSON.stringify(updatedWebhooks));
+      alert("Webhooks imported successfully!");
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setFileToImport(null);
+    } catch (error) {
+      console.error("Error importing webhooks:", error);
+      alert("Failed to import webhooks: " + error.message);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      key: "",
+      url: "",
+      method: "ANY",
+      authMethod: "none",
+      apiKeyHeaderName: "X-API-Key",
+      apiKey: "",
+      username: "",
+      password: "",
+      bearerToken: "",
+      customHeaderName: "",
+      customHeaderValue: "",
+      description: "",
+    });
+    setFormErrors({});
+  };
+
   return (
     <div className="mb-4 border-t border-secondary-200 dark:border-dark-border pt-4 mt-4">
       <div 
@@ -229,6 +426,28 @@ export default function WebhookManager() {
       
       {isExpanded && (
         <div className="mt-2">
+          <div className="flex justify-center mb-3 gap-2">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload} 
+              accept=".json" 
+              className="hidden" 
+            />
+            <button
+              onClick={() => fileInputRef.current.click()}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium shadow-sm"
+            >
+              Import Webhooks
+            </button>
+            <button
+              onClick={exportWebhooks}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium shadow-sm"
+            >
+              Export Webhooks
+            </button>
+          </div>
+          
           {errorMessage && (
             <div className={`mb-4 p-3 rounded border ${errorMessage.includes('successfully') ? 'bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-800/30 dark:text-green-400' : 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800/30 dark:text-red-400'}`}>
               {errorMessage}
@@ -240,7 +459,6 @@ export default function WebhookManager() {
               {editingKey ? `Edit Webhook: ${editingKey}` : "Add New Webhook Endpoint"}
             </h3>
             
-            {/* Stack form fields vertically */}
             <div className="space-y-4">
               <div>
                 <label className="block mb-1 text-secondary-700 dark:text-dark-text">
@@ -503,12 +721,10 @@ export default function WebhookManager() {
     
           <div className="space-y-2 max-h-[30rem] overflow-y-auto">
             {Object.entries(webhookEndpoints).map(([key, config]) => {
-              // Handle both new format (object with url/apiKey/method) and old format (string URL)
               const url = typeof config === 'string' ? config : config.url;
               const method = typeof config === 'object' && config.method ? config.method : 'ANY';
               const description = typeof config === 'object' ? config.description : null;
               
-              // Get authentication info
               const authMethod = typeof config === 'object' ? config.authMethod || 'none' : 'none';
               const apiKey = typeof config === 'object' ? config.apiKey : null;
               const apiKeyHeaderName = typeof config === 'object' ? config.apiKeyHeaderName || 'X-API-Key' : 'X-API-Key';
@@ -568,6 +784,80 @@ export default function WebhookManager() {
                 No endpoints configured. Add one above to enable webhook tools.
               </p>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* Add encryption modal */}
+      {showEncryptModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-lg font-semibold mb-4">Export Options</h3>
+            <p className="mb-4">Would you like to encrypt your webhook data with a password?</p>
+            
+            <div className="mb-4">
+              <label className="block mb-2">Encryption Password (optional):</label>
+              <input
+                type="password"
+                value={encryptPassword}
+                onChange={(e) => setEncryptPassword(e.target.value)}
+                className="w-full p-2 bg-gray-700 rounded border border-gray-600"
+                placeholder="Leave empty for no encryption"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => setShowEncryptModal(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 font-medium shadow-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => processExport(encryptPassword.length > 0)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium shadow-sm"
+              >
+                Export
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Add decryption modal */}
+      {showDecryptModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-96">
+            <h3 className="text-lg font-semibold mb-4">Encrypted File Detected</h3>
+            <p className="mb-4">This file appears to be encrypted. Please enter the password to decrypt:</p>
+            
+            <div className="mb-4">
+              <input
+                type="password"
+                value={decryptPassword}
+                onChange={(e) => setDecryptPassword(e.target.value)}
+                className="w-full p-2 bg-gray-700 rounded border border-gray-600"
+                placeholder="Enter decryption password"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button 
+                onClick={() => {
+                  setShowDecryptModal(false);
+                  setFileToImport(null);
+                }}
+                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 font-medium shadow-sm"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={processImport}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium shadow-sm"
+              >
+                Decrypt & Import
+              </button>
+            </div>
           </div>
         </div>
       )}
