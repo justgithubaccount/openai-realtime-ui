@@ -12,7 +12,7 @@ Be proactive about using these tools when they would help answer a question.
 For the clipboard tool, you can save information with "clipboard_manager" by using the "save" action. When users ask to "copy this", "save this to clipboard", or similar requests, use the clipboard tool to save the information.
 
 For webhooks, suggest using them when the user needs real-time data or other external information.
-Always explain your reasoning before using a tool, and summarize the results in a helpful way.`
+Always use the required method and required field in the description when using a webhook, and summarize the results in a helpful way.`
   ); // Default system prompt
 
   // Default instructions text for reset button
@@ -22,7 +22,7 @@ Be proactive about using these tools when they would help answer a question.
 For the clipboard tool, you can save information with "clipboard_manager" by using the "save" action. When users ask to "copy this", "save this to clipboard", or similar requests, use the clipboard tool to save the information.
 
 For webhooks, suggest using them when the user needs real-time data or other external information.
-Always explain your reasoning before using a tool, and summarize the results in a helpful way.`;
+Always use the required method and required field in the description when using a webhook, and summarize the results in a helpful way.`;
 
   const voices = [
     { id: "alloy", name: "Alloy (Female)" },
