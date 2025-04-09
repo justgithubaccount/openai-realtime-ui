@@ -65,7 +65,7 @@ Always explain your reasoning before using a tool, and summarize the results in 
         </select>
       </div>
       
-      <div className="w-full max-w-md mb-2">
+      <div className="w-full max-w-xl mb-2">
         <div className="flex justify-between items-center mb-1">
           <label htmlFor="instructions" className="block text-sm text-secondary-700 dark:text-dark-text-secondary">
             System Instructions:
