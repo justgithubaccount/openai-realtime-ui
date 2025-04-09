@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320">
+  <defs>
+    <linearGradient id="speechGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4299e1" />
+      <stop offset="100%" stop-color="#3182ce" />
+    </linearGradient>
+    <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38b2ac" />
+      <stop offset="100%" stop-color="#4fd1c5" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="160" cy="160" r="150" fill="#1a202c" />
+  
+  <!-- Speech bubble -->
+  <path d="M90 110 C90 90, 110 70, 130 70 L230 70 C250 70, 270 90, 270 110 L270 180 C270 200, 250 220, 230 220 L170 220 L140 250 L140 220 L130 220 C110 220, 90 200, 90 180 Z" 
+        fill="url(#speechGradient)" />
+  
+  <!-- Sound waves -->
+  <path d="M120 140 Q140 120, 160 140 Q180 160, 200 140 Q220 120, 240 140" 
+        stroke="url(#waveGradient)" stroke-width="12" fill="none" stroke-linecap="round" />
+  <path d="M120 170 Q140 150, 160 170 Q180 190, 200 170 Q220 150, 240 170" 
+        stroke="url(#waveGradient)" stroke-width="8" fill="none" stroke-linecap="round" />
+</svg> 

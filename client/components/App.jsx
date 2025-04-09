@@ -1,10 +1,33 @@
 import { useEffect, useRef, useState } from "react";
-import logo from "/assets/openai-logomark.svg";
+import logo from "/assets/realtime-chat-logo.svg";
 import EventLog from "./EventLog";
 import SessionControls from "./SessionControls";
 import ToolPanel from "./ToolPanel";
 import DarkModeToggle from "./DarkModeToggle";
 import { MessageSquare } from "lucide-react";
+
+// Audio Waveform component to visualize AI speaking
+function AudioWaveform({ isActive }) {
+  if (!isActive) return null;
+  
+  return (
+    <div className="audio-waveform flex items-center px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded-md">
+      <div className="flex items-center gap-1 mr-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <div 
+            key={i}
+            className="w-1 bg-green-500 dark:bg-green-400 rounded-full"
+            style={{ 
+              height: `${Math.max(4, Math.floor(Math.random() * 24))}px`,
+              animation: `waveform 0.5s ease infinite ${i * 0.1}s`
+            }}
+          ></div>
+        ))}
+      </div>
+      <span className="text-sm font-medium">AI is speaking...</span>
+    </div>
+  );
+}
 
 export default function App() {
   const [isSessionActive, setIsSessionActive] = useState(false);
@@ -14,6 +37,22 @@ export default function App() {
   const audioElement = useRef(null);
   const [toolsAdded, setToolsAdded] = useState([]);
   const [activeToolCall, setActiveToolCall] = useState(null);
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
+
+  // Add waveform animation style to document head
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes waveform {
+        0%, 100% { height: 4px; }
+        50% { height: 20px; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   async function startSession(voiceId = "verse", instructions = "") {
     try {
@@ -46,7 +85,11 @@ export default function App() {
       // Set up to play remote audio from the model
       audioElement.current = document.createElement("audio");
       audioElement.current.autoplay = true;
-      pc.ontrack = (e) => (audioElement.current.srcObject = e.streams[0]);
+      pc.ontrack = (e) => {
+        audioElement.current.srcObject = e.streams[0];
+        // Trigger recheck of audio analysis when track changes
+        setIsAISpeaking(false);
+      };
 
       // Add local audio track for microphone input in the browser
       const ms = await navigator.mediaDevices.getUserMedia({
@@ -152,6 +195,14 @@ export default function App() {
       dataChannel.onmessage = (e) => {
         const event = JSON.parse(e.data);
         const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        // Check for speech events to detect when AI is speaking
+        if (event.type === 'speech.started') {
+          setIsAISpeaking(true);
+        } else if (event.type === 'speech.stopped' || event.type === 'speech.done') {
+          setIsAISpeaking(false);
+        }
+        
         setEvents((prev) => [{ ...event, timestamp, source: 'server' }, ...prev]);
       };
       dataChannel.onopen = () => {
@@ -165,6 +216,41 @@ export default function App() {
     }
     return () => { dataChannel?.close(); };
   }, [dataChannel]);
+
+  // Add audio analyzers to detect when AI is speaking
+  useEffect(() => {
+    if (!audioElement.current || !audioElement.current.srcObject) return;
+    
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioCtx.createAnalyser();
+      const source = audioCtx.createMediaStreamSource(audioElement.current.srcObject);
+      source.connect(analyser);
+      
+      analyser.fftSize = 256;
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      // Check audio levels periodically to determine if AI is speaking
+      const checkAudioInterval = setInterval(() => {
+        if (!audioElement.current || !audioElement.current.srcObject) {
+          clearInterval(checkAudioInterval);
+          setIsAISpeaking(false);
+          return;
+        }
+        
+        analyser.getByteFrequencyData(dataArray);
+        
+        // Calculate average frequency - if above threshold, AI is speaking
+        const average = dataArray.reduce((a, b) => a + b, 0) / bufferLength;
+        setIsAISpeaking(average > 5); // Threshold may need adjustment
+      }, 100);
+      
+      return () => clearInterval(checkAudioInterval);
+    } catch (error) {
+      console.error("Failed to setup audio analysis:", error);
+    }
+  }, [audioElement.current?.srcObject]);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -182,6 +268,7 @@ export default function App() {
         {/* Chat/Event Area */}
         <section className="flex flex-col flex-1 h-full min-w-0 bg-white dark:bg-dark-background"> 
           <div className="flex-1 p-4 overflow-y-auto space-y-3 scroll-smooth">
+            {isSessionActive && <AudioWaveform isActive={isAISpeaking} />}
             <EventLog events={events} />
           </div>
           <div className="flex-shrink-0 p-3 border-t border-secondary-200 dark:border-dark-border bg-white dark:bg-dark-surface">

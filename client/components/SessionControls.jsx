@@ -97,13 +97,18 @@ Always explain your reasoning before using a tool, and summarize the results in 
         />
       </div>
       
-      <Button
+      <button
         onClick={handleStartSession}
-        className={isActivating ? "bg-gray-600 dark:bg-gray-700" : "bg-red-600 dark:bg-purple-600 start-session-btn"}
-        icon={<CloudLightning height={16} />}
+        disabled={isActivating}
+        className={`flex items-center gap-2 px-6 py-3 font-medium text-white rounded shadow-md transition-colors ${
+          isActivating 
+            ? "bg-gray-600 dark:bg-gray-700 cursor-not-allowed" 
+            : "bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+        }`}
       >
-        {isActivating ? "starting session..." : "start session"}
-      </Button>
+        <CloudLightning size={18} />
+        {isActivating ? "Starting session..." : "Start session"}
+      </button>
     </div>
   );
 }
