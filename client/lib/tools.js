@@ -313,7 +313,7 @@ export const tools = {
           },
           payload: {
             type: "object",
-            description: "JSON payload to send with the request (REQUIRED for POST requests). For search endpoints, this MUST include a 'query' field with the specific search term.",
+            description: "payload is the only valid field to send POST body content. Do not use data, body, or any other field. to send with the request. payload is (REQUIRED for POST requests). For search endpoints, this MUST include a 'query' field with the specific search term.",
           },
           endpoint_key: {
             type: "string",

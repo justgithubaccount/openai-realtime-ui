@@ -460,6 +460,9 @@ export default function ToolPanel({
 }) {
   const [toolResult, setToolResult] = useState(null); // Stores { type: 'search_results'/'error', data: ... }
   const [isLoadingTool, setIsLoadingTool] = useState(false);
+  const [lastSentEnvHash, setLastSentEnvHash] = useState('');
+  const [lastCallTime, setLastCallTime] = useState(0); // Track when the last call was made
+  const [lastCallWasError, setLastCallWasError] = useState(false); // Track if the last call resulted in an error
 
   // Generate the session update payload only once or when needed
   const sessionUpdatePayload = useMemo(() => ({
@@ -471,9 +474,6 @@ export default function ToolPanel({
   }), [envVars]); // Re-generate when envVars change
 
   // Effect to update tools when environment variables change
-  const [lastSentEnvHash, setLastSentEnvHash] = useState('');
-  
-  // Effect to add tools once session starts or when env vars change
   useEffect(() => {
     if (!isSessionActive) {
       setToolsAdded(false);
@@ -500,6 +500,25 @@ export default function ToolPanel({
       setLastSentEnvHash(envHash);
     }
   }, [isSessionActive, events, toolsAdded, sendClientEvent, setToolsAdded, setActiveToolCall, sessionUpdatePayload, envVars, lastSentEnvHash]);
+
+  // Effect to resend tool definitions when an error occurs
+  useEffect(() => {
+    // Only proceed if there was an error and we have an active session with tools already added
+    if (lastCallWasError && isSessionActive && toolsAdded) {
+      console.log("Resending tool definitions after error");
+      // Add a small delay to avoid immediate resending
+      const timer = setTimeout(() => {
+        sendClientEvent({
+          ...sessionUpdatePayload,
+          event_id: `tool_update_after_error_${Date.now()}`
+        });
+        // Reset error flag after sending update
+        setLastCallWasError(false);
+      }, 1000); // 1 second delay
+      
+      return () => clearTimeout(timer);
+    }
+  }, [lastCallWasError, isSessionActive, toolsAdded, sendClientEvent, sessionUpdatePayload]);
 
   // Function to add to tool call history
   const addToToolCallHistory = (toolCall, result, status) => {
@@ -565,8 +584,15 @@ export default function ToolPanel({
       const callId = functionCall.call_id;
       const toolName = functionCall.name;
 
-      // Prevent re-processing the same active call - NEED TO LOOK AT - IF AI FAILS TO USE WE WANT IT TO TRY AGAIN AND SOMETIMES IT DOESNT LIKE USING A WEBHOOK
-      if (!callId || activeToolCall?.call_id === callId) return;
+      // Calculate time since last call
+      const currentTime = Date.now();
+      const timeSinceLastCall = currentTime - lastCallTime;
+      
+      // Prevent re-processing the same active call, but allow retries after 2 seconds or if last call was an error
+      if ((!callId || activeToolCall?.call_id === callId) && 
+          !(timeSinceLastCall > 2000 || lastCallWasError)) {
+        return;
+      }
 
       // Find the tool in our registry
       const tool = tools[toolName];
@@ -579,6 +605,8 @@ export default function ToolPanel({
       setActiveToolCall(functionCall);
       setToolResult(null);
       setIsLoadingTool(true);
+      setLastCallTime(currentTime);
+      setLastCallWasError(false); // Reset error status for new call
 
       const sendResult = (resultData) => {
         if (!callId) return; // Should not happen if we reach here
@@ -613,29 +641,36 @@ export default function ToolPanel({
               const parsedContent = JSON.parse(result.content);
               setToolResult({ type: toolName, data: parsedContent }); // Store parsed data for display
               
-              // Check for error indicators in both parsed content and raw string
-              const isError = (
-                // Check for common error patterns in parsed objects
+              // Check for error indicators in the parsed content or raw string
+              const contentStr = String(result.content).toLowerCase();
+              const isError = 
+                contentStr.includes('error') || 
+                contentStr.includes('fail') || 
+                contentStr.includes('exception') ||
                 (typeof parsedContent === 'object' && parsedContent.error !== undefined) ||
-                (typeof parsedContent === 'object' && parsedContent.status === 'error') ||
-                // For webhook calls, check for any error indication in content
-                (toolName === 'webhook_call' && String(result.content).toLowerCase().includes('error'))
-              );
+                (typeof parsedContent === 'object' && parsedContent.status === 'error');
               
-              // Add to history with appropriate status and the parsed content
+              // Set error flag if content indicates an error
+              if (isError) {
+                setLastCallWasError(true);
+              }
+              
+              // Add to history with appropriate status
               addToToolCallHistory(functionCall, { data: parsedContent }, isError ? 'error' : 'success');
             } catch (error) {
               console.error(`Failed to parse ${toolName} result content:`, error.message);
               setToolResult({ type: toolName, data: result.content }); // Store as is if parsing fails
               
               // Check for error indicators in the raw string
-              const rawContent = String(result.content).toLowerCase();
-              const isRawError = 
-                rawContent.includes('error') || 
-                rawContent.includes('fail') || 
-                rawContent.includes('exception');
+              const contentStr = String(result.content).toLowerCase();
+              const isRawError = contentStr.includes('error') || contentStr.includes('fail') || contentStr.includes('exception');
               
-              // Add to history with appropriate status
+              // Set error flag if raw content indicates an error
+              if (isRawError) {
+                setLastCallWasError(true);
+              }
+              
+              // Add to history as is, but with appropriate status
               addToToolCallHistory(functionCall, { data: result.content }, isRawError ? 'error' : 'success');
             }
             
@@ -645,11 +680,20 @@ export default function ToolPanel({
             console.error(`${toolName} execution failed:`, error.message);
             const errorData = { message: error.message || `Tool ${toolName} failed` };
             setToolResult({ type: 'error', data: errorData });
+            setLastCallWasError(true); // Mark that the last call resulted in an error
             
             // Add error to history
             addToToolCallHistory(functionCall, errorData, 'error');
             
             sendResult({ status: 'error', content: JSON.stringify(errorData) });
+            
+            // After a short delay, prompt the model to continue
+            setTimeout(() => {
+              sendClientEvent({
+                type: "response.create",
+                prompt: "Please correct the error and try again."
+              });
+            }, 1500);
           })
           .finally(() => setIsLoadingTool(false));
 
@@ -659,11 +703,20 @@ export default function ToolPanel({
         const errorData = { message: `Argument parsing error: ${error.message}` };
         setToolResult({ type: 'error', data: errorData });
         setIsLoadingTool(false);
+        setLastCallWasError(true); // Mark that the last call resulted in an error
         
         // Add error to history
         addToToolCallHistory(functionCall, errorData, 'error');
         
         sendResult({ status: 'error', content: JSON.stringify(errorData) });
+        
+        // After a short delay, prompt the model to continue
+        setTimeout(() => {
+          sendClientEvent({
+            type: "response.create",
+            prompt: "Please correct the argument error and try again."
+          });
+        }, 1500);
       }
     }
   }, [events, sendClientEvent, activeToolCall, setActiveToolCall]);

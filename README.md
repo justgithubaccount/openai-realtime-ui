@@ -41,9 +41,10 @@ A feature-rich web application for interacting with OpenAI's Realtime API, featu
 3. Create a `.env` file in the project root with your API keys:
    ```
    OPENAI_API_KEY=your_openai_api_key_here
-   SEARXNG_URL=your_searxng_url_here  # Optional
-   OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17  # Optional
-   PORT=3000  # Optional, defaults to 3000
+   # Optional
+   SEARXNG_URL=your_searxng_url_here 
+   # Optional, set to mini model for lower cost
+   OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17
    ```
 
 4. Start the development server:
@@ -71,8 +72,10 @@ For local development with hot reloading:
 2. Create a `.env` file with your API keys:
    ```
    OPENAI_API_KEY=your_openai_api_key_here
-   SEARXNG_URL=your_searxng_url_here  # Optional
-   OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17  # Optional, set to mini model for lower cost
+   # Optional
+   SEARXNG_URL=your_searxng_url_here 
+   # Optional, set to mini model for lower cost
+   OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17  
    ```
 
 3. Start the development container:
@@ -137,7 +140,7 @@ The Webhook Manager allows you to configure custom API endpoints that the AI can
      - **Basic Auth**: Username/password authentication using the Basic scheme
      - **Bearer Token**: JWT or OAuth token authentication using the Bearer scheme
      - **Custom Header**: Any custom authentication header and value
-   - **Description**: Detailed explanation of the webhook's purpose and required parameters
+   - **Description**: Detailed explanation of the webhook's purpose and required parameters, use payload to describe the data to send to the webhook.
 
 All authentication credentials are stored securely in your browser's localStorage and are only sent to the specified API endpoints.
 

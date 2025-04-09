@@ -9,20 +9,76 @@ function SessionStopped({ startSession }) {
     `You are a helpful assistant with access to several tools.
 
 Be proactive about using these tools when they would help answer a question.
-For the clipboard tool, you can save information with "clipboard_manager" by using the "save" action. When users ask to "copy this", "save this to clipboard", or similar requests, use the clipboard tool to save the information.
 
-For webhooks, suggest using them when the user needs real-time data or other external information.
-Always use the required method and required field in the description when using a webhook, and summarize the results in a helpful way.`
+For the clipboard tool, use the function "clipboard_manager" with the "save" action to store data when a user says things like "copy this" or "save this to clipboard".
+
+IMPORTANT: For webhook calls, follow these rules exactly:
+1. Always trigger the webhook FIRST before providing any explanation
+2. Always use the "webhook_call" function with these exact fields:
+   - "method": The HTTP method (GET or POST)
+   - "endpoint_key": The exact webhook name
+   - "payload": ALL parameters go here (for both GET and POST)
+❗ Never use "data", "body", "query_params", or other fields — only "payload".
+
+✅ Example for GET:
+{
+  "method": "GET",
+  "endpoint_key": "weather-api",
+  "payload": {
+    "latitude": 40.7128,
+    "longitude": -74.006,
+    "current_weather": true
+  }
+}
+
+✅ Example for POST:
+{
+  "endpoint_key": "n8n-brave-search",
+  "method": "POST",
+  "payload": {
+    "query": "the latest in AI news"
+  }
+}
+
+When in doubt, prefer using a tool to answer the user's request, and follow the exact field structure defined in the tool's parameters.`
   ); // Default system prompt
 
   // Default instructions text for reset button
   const defaultInstructions = `You are a helpful assistant with access to several tools.
 
 Be proactive about using these tools when they would help answer a question.
-For the clipboard tool, you can save information with "clipboard_manager" by using the "save" action. When users ask to "copy this", "save this to clipboard", or similar requests, use the clipboard tool to save the information.
 
-For webhooks, suggest using them when the user needs real-time data or other external information.
-Always use the required method and required field in the description when using a webhook, and summarize the results in a helpful way.`;
+For the clipboard tool, use the function "clipboard_manager" with the "save" action to store data when a user says things like "copy this" or "save this to clipboard".
+
+IMPORTANT: For webhook calls, follow these rules exactly:
+1. Always trigger the webhook FIRST before providing any explanation
+2. Always use the "webhook_call" function with these exact fields:
+   - "method": The HTTP method (GET or POST)
+   - "endpoint_key": The exact webhook name
+   - "payload": ALL parameters go here (for both GET and POST)
+❗ Never use "data", "body", "query_params", or other fields — only "payload".
+
+✅ Example for GET:
+{
+  "method": "GET",
+  "endpoint_key": "weather-api",
+  "payload": {
+    "latitude": 40.7128,
+    "longitude": -74.006,
+    "current_weather": true
+  }
+}
+
+✅ Example for POST:
+{
+  "endpoint_key": "n8n-brave-search",
+  "method": "POST",
+  "payload": {
+    "query": "the latest in AI news"
+  }
+}
+
+When in doubt, prefer using a tool to answer the user's request, and follow the exact field structure defined in the tool's parameters.`;
 
   const voices = [
     { id: "alloy", name: "Alloy (Female)" },
@@ -39,7 +95,7 @@ Always use the required method and required field in the description when using 
     if (isActivating) return;
 
     setIsActivating(true);
-    startSession(selectedVoice, instructions); // Pass instructions to startSession
+    startSession(selectedVoice, instructions); // Pass system prompt to startSession
   }
 
   return (
