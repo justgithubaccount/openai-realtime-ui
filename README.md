@@ -44,6 +44,7 @@ A feature-rich web application for interacting with OpenAI's Realtime API, featu
    # Optional
    SEARXNG_URL=your_searxng_url_here 
    # Optional, set to mini model for lower cost
+   # gpt-4o-mini-realtime-preview-2024-12-17
    OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17
    ```
 
@@ -55,7 +56,7 @@ A feature-rich web application for interacting with OpenAI's Realtime API, featu
 5. Open your browser and navigate to `http://localhost:3000`
 
 
-![UI](client/assets/images/ui.png)
+![UI](client/assets/images/realtime-ui.png)
 
 ## Docker Setup
 
@@ -75,6 +76,7 @@ For local development with hot reloading:
    # Optional
    SEARXNG_URL=your_searxng_url_here 
    # Optional, set to mini model for lower cost
+   # gpt-4o-mini-realtime-preview-2024-12-17
    OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17  
    ```
 
