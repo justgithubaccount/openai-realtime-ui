@@ -332,7 +332,7 @@ export default function App() {
         </section>
 
         {/* Tool Panel Area - Pass setter functions down */}
-        <aside className="flex-shrink-0 w-[420px] h-full border-l border-secondary-200 dark:border-dark-border bg-secondary-50 dark:bg-dark-surface overflow-y-auto">
+        <aside className="flex-shrink-0 w-[460px] h-full border-l border-secondary-200 dark:border-dark-border bg-secondary-50 dark:bg-dark-surface overflow-y-auto">
           <ToolPanel
             sendClientEvent={sendClientEvent}
             events={events}

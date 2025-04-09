@@ -570,6 +570,145 @@ export const tools = {
     requiredEnvVars: [],
   },
   
+  // Clipboard Manager Tool
+  clipboard_manager: {
+    definition: {
+      type: "function",
+      name: "clipboard_manager",
+      description: "Manage clipboard history. Save text to the clipboard, retrieve past entries, or view the clipboard history. Each entry is automatically timestamped.",
+      parameters: {
+        type: "object",
+        strict: true,
+        properties: {
+          action: {
+            type: "string",
+            description: "Action to perform on the clipboard",
+            enum: ["save", "get", "list", "clear", "delete"]
+          },
+          text: {
+            type: "string",
+            description: "Text to save to clipboard (required for 'save' action)"
+          },
+          entry_id: {
+            type: "number",
+            description: "ID of the clipboard entry to retrieve or delete (required for 'get' and 'delete' actions)"
+          },
+          limit: {
+            type: "number",
+            description: "Maximum number of entries to return when listing (optional for 'list' action)",
+          }
+        },
+        required: ["action"],
+      },
+    },
+    execute: async (args) => {
+      try {
+        const action = args.action;
+        
+        // Get current clipboard from localStorage
+        const clipboardHistory = JSON.parse(localStorage.getItem('clipboardHistory') || '[]');
+        
+        let result = {};
+        
+        switch (action) {
+          case 'save':
+            if (!args.text) {
+              throw new Error("Text is required for 'save' action");
+            }
+            
+            // Create new entry with timestamp
+            const newEntry = {
+              id: Date.now(),
+              text: args.text,
+              timestamp: new Date().toISOString(),
+              created: new Date().toLocaleString()
+            };
+            
+            // Add to beginning of array (newest first)
+            clipboardHistory.unshift(newEntry);
+            
+            // Save back to localStorage (limit to 50 entries)
+            localStorage.setItem('clipboardHistory', JSON.stringify(clipboardHistory.slice(0, 50)));
+            
+            result = {
+              success: true,
+              message: "Text saved to clipboard",
+              entry: newEntry
+            };
+            break;
+            
+          case 'get':
+            if (args.entry_id === undefined) {
+              throw new Error("Entry ID is required for 'get' action");
+            }
+            
+            const entry = clipboardHistory.find(e => e.id === args.entry_id);
+            if (!entry) {
+              throw new Error(`Entry with ID ${args.entry_id} not found`);
+            }
+            
+            result = {
+              success: true,
+              entry: entry
+            };
+            break;
+            
+          case 'list':
+            const limit = args.limit && args.limit > 0 ? Math.min(args.limit, 50) : 10;
+            result = {
+              success: true,
+              entries: clipboardHistory.slice(0, limit),
+              total: clipboardHistory.length
+            };
+            break;
+            
+          case 'clear':
+            localStorage.setItem('clipboardHistory', '[]');
+            result = {
+              success: true,
+              message: "Clipboard history cleared"
+            };
+            break;
+            
+          case 'delete':
+            if (args.entry_id === undefined) {
+              throw new Error("Entry ID is required for 'delete' action");
+            }
+            
+            const newHistory = clipboardHistory.filter(e => e.id !== args.entry_id);
+            if (newHistory.length === clipboardHistory.length) {
+              throw new Error(`Entry with ID ${args.entry_id} not found`);
+            }
+            
+            localStorage.setItem('clipboardHistory', JSON.stringify(newHistory));
+            result = {
+              success: true,
+              message: `Entry with ID ${args.entry_id} deleted`,
+              remaining: newHistory.length
+            };
+            break;
+            
+          default:
+            throw new Error(`Unknown action: ${action}`);
+        }
+        
+        return { 
+          status: 'success', 
+          content: JSON.stringify(result)
+        };
+      } catch (error) {
+        console.error("Clipboard tool failed:", error);
+        return {
+          status: 'error',
+          content: JSON.stringify({ error: error.message || "Failed to manage clipboard" })
+        };
+      }
+    },
+    OutputComponent: 'ClipboardOutput',
+    // No environment variables required - always available
+    requiredEnvVars: [],
+  },
+  
   // === NEW TOOL PLACEHOLDER ===
   // Uncomment and modify this template to add a new tool
   /*

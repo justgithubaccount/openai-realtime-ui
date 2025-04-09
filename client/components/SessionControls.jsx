@@ -8,7 +8,9 @@ function SessionStopped({ startSession }) {
   const [instructions, setInstructions] = useState(
     `You are a helpful assistant with access to several tools.
 
-Be proactive about using these tools when they would help answer a question. 
+Be proactive about using these tools when they would help answer a question.
+For the clipboard tool, you can save information with "clipboard_manager" by using the "save" action. When users ask to "copy this", "save this to clipboard", or similar requests, use the clipboard tool to save the information.
+
 For webhooks, suggest using them when the user needs real-time data or other external information.
 Always explain your reasoning before using a tool, and summarize the results in a helpful way.`
   ); // Default system prompt
@@ -16,8 +18,10 @@ Always explain your reasoning before using a tool, and summarize the results in 
   // Default instructions text for reset button
   const defaultInstructions = `You are a helpful assistant with access to several tools.
 
-Be proactive about using these tools when they would help answer a question. 
-For webhooks, suggest using them when the user needs real-time data like weather, crypto prices, or other external information.
+Be proactive about using these tools when they would help answer a question.
+For the clipboard tool, you can save information with "clipboard_manager" by using the "save" action. When users ask to "copy this", "save this to clipboard", or similar requests, use the clipboard tool to save the information.
+
+For webhooks, suggest using them when the user needs real-time data or other external information.
 Always explain your reasoning before using a tool, and summarize the results in a helpful way.`;
 
   const voices = [

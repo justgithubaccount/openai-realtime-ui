@@ -17,9 +17,9 @@ function Tooltip({ text, children }) {
         {children}
       </span>
       {isVisible && (
-        <div className="absolute z-50 w-72 p-3 text-xs bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded shadow-lg border border-gray-200 dark:border-gray-700" style={{ top: "calc(100% + 10px)", left: "-20px", right: "auto" }}>
+        <div className="absolute z-50 w-72 p-3 text-xs bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded shadow-lg border border-gray-200 dark:border-gray-700" style={{ left: "20px", top: "-10px" }}>
           {text}
-          <div className="absolute top-0 left-4 -translate-y-1/2 w-2 h-2 rotate-45 bg-white dark:bg-gray-800 border-l border-t border-gray-200 dark:border-gray-700"></div>
+          <div className="absolute top-3 left-0 -translate-x-1/2 w-2 h-2 rotate-45 bg-white dark:bg-gray-800 border-l border-b border-gray-200 dark:border-gray-700"></div>
         </div>
       )}
     </div>
@@ -46,7 +46,7 @@ export default function WebhookManager() {
   const [formErrors, setFormErrors] = useState({});
   const [editingKey, setEditingKey] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [isTipsExpanded, setIsTipsExpanded] = useState(false); // Tips collapsed by default
   const fileInputRef = useRef(null); // Reference for hidden file input
   const [showEncryptModal, setShowEncryptModal] = useState(false);
@@ -258,7 +258,7 @@ export default function WebhookManager() {
          '••••••••••••••••' : config.customHeaderValue) : '',
       description: typeof config === 'object' ? config.description : '',
     });
-    setIsExpanded(true); // Ensure form is visible when editing
+    setIsCollapsed(false); // Ensure form is visible when editing
   };
 
   const removeEndpoint = (key) => {
@@ -411,20 +411,20 @@ export default function WebhookManager() {
   };
 
   return (
-    <div className="mb-4 border-t border-secondary-200 dark:border-dark-border pt-4 mt-4 pr-1">
+    <div className="border border-secondary-200 dark:border-dark-border bg-white dark:bg-dark-surface rounded-lg mb-4 p-4">
       <div 
         className="flex items-center justify-between cursor-pointer mb-2 pr-4" 
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => setIsCollapsed(!isCollapsed)}
       >
-        <h2 className="text-xl font-semibold text-secondary-800 dark:text-dark-text flex-1">
+        <h2 className="text-md font-semibold text-secondary-800 dark:text-dark-text flex-1">
           Webhook Endpoints Manager
         </h2>
         <button className="text-secondary-500 dark:text-dark-text-secondary hover:bg-secondary-100 dark:hover:bg-dark-surface-alt p-2 rounded-full">
-          {isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+          {isCollapsed ? <ChevronDown size={24} /> : <ChevronUp size={24} />}
         </button>
       </div>
       
-      {isExpanded && (
+      {!isCollapsed && (
         <div className="mt-2">
           <div className="flex justify-center mb-3 gap-2">
             <input 
@@ -639,10 +639,10 @@ export default function WebhookManager() {
               
               <div>
                 <label className="block mb-1 text-secondary-700 dark:text-dark-text">
-                  Description (include payload requirements):
                   <Tooltip text={descriptionTooltip}>
-                    <span className="ml-1 inline-flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full h-4 w-4 text-xs">?</span>
+                    <span className="inline-flex items-center justify-center bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full h-4 w-4 text-xs mr-1">?</span>
                   </Tooltip>
+                  Description (include payload requirements):
                 </label>
                 <textarea
                   name="description"

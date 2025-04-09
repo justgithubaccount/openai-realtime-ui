@@ -1,9 +1,10 @@
-import { useEffect, useState, lazy, Suspense, useMemo } from "react";
+import { useEffect, useState, lazy, Suspense, useMemo, useRef } from "react";
 import { AlertCircle } from "lucide-react"; // Only need AlertCircle here now
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { tools, getAllToolDefinitions } from '../lib/tools'; // Import from registry
 import WebhookManager from './WebhookManager'; // Import the webhook manager
+import ClipboardManager from './ClipboardManager'; // Import the clipboard manager
 
 // --- Lazy loaded SyntaxHighlighter (Keep this) ---
 const SyntaxHighlighter = lazy(() =>
@@ -285,6 +286,94 @@ function DateTimeOutput({ toolCall, toolResult, isLoading }) {
   );
 }
 
+function ClipboardOutput({ toolCall, toolResult, isLoading }) {
+  // Parse arguments from the tool call
+  const args = JSON.parse(toolCall.arguments || '{}');
+  const action = args.action || "";
+  
+  // Get results from toolResult
+  let results = null;
+  if (toolResult && !isLoading) {
+    try {
+      if (typeof toolResult.data === 'string') {
+        results = JSON.parse(toolResult.data);
+      } else if (toolResult.data) {
+        results = toolResult.data;
+      }
+      
+      // If this is a save action and was successful, use a timeout to dispatch events
+      // after rendering is complete to avoid React warnings
+      if (action === 'save' && results?.success) {
+        setTimeout(() => {
+          // Create and dispatch a custom event to force update
+          const updateEvent = new CustomEvent('clipboard-updated', {
+            detail: { action: 'save', entry: results.entry }
+          });
+          window.dispatchEvent(updateEvent);
+        }, 0);
+      }
+    } catch (error) {
+      console.error("Error parsing clipboard results:", error);
+    }
+  }
+
+  // Function to render a single clipboard entry
+  const renderEntry = (entry) => (
+    <div key={entry.id} className="border-b border-secondary-100 dark:border-dark-border py-2 last:border-0">
+      <div className="flex justify-between items-start">
+        <div className="text-sm font-medium break-all mr-2 flex-1">{entry.text}</div>
+        <div className="text-xs text-secondary-500 whitespace-nowrap">{entry.created}</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-md font-semibold">Clipboard {action.charAt(0).toUpperCase() + action.slice(1)}</h3>
+      </div>
+      
+      {isLoading ? (
+        <div className="text-sm text-secondary-500 animate-pulse">
+          Processing clipboard...
+        </div>
+      ) : results ? (
+        <div className="bg-secondary-50 dark:bg-dark-surface-alt p-3 rounded">
+          {action === 'list' && results.entries && (
+            <div className="max-h-96 overflow-y-auto">
+              <div className="text-xs text-secondary-500 mb-2">
+                Showing {results.entries.length} of {results.total} entries
+              </div>
+              {results.entries.length > 0 ? (
+                <div className="space-y-2">
+                  {results.entries.map(renderEntry)}
+                </div>
+              ) : (
+                <div className="text-sm text-secondary-500">Clipboard is empty</div>
+              )}
+            </div>
+          )}
+          
+          {action === 'get' && results.entry && (
+            renderEntry(results.entry)
+          )}
+          
+          {(action === 'save' || action === 'clear' || action === 'delete') && (
+            <div className="text-sm">
+              {results.message}
+              {results.entry && (
+                <div className="mt-2">{renderEntry(results.entry)}</div>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="text-sm text-secondary-500">No clipboard data available</div>
+      )}
+    </div>
+  );
+}
+
 // Map component names (strings from registry) to actual components
 const OutputComponents = {
   ColorPaletteOutput,
@@ -292,6 +381,7 @@ const OutputComponents = {
   WebhookResultOutput,
   ErrorOutput,
   DateTimeOutput,
+  ClipboardOutput,
   // Add other output components here
 };
 // -------------------------------------------------------
@@ -453,7 +543,9 @@ export default function ToolPanel({
 
   return (
     <section className="h-full w-full flex flex-col gap-4 p-5">
-      <h2 className="flex-shrink-0 text-lg font-semibold text-secondary-800 dark:text-dark-text border-b border-secondary-200 dark:border-dark-border pb-2">Tools Panel</h2>
+      <div className="flex-shrink-0 flex justify-between items-center border-b border-secondary-200 dark:border-dark-border pb-2">
+        <h2 className="text-lg font-semibold text-secondary-800 dark:text-dark-text">Tools Panel</h2>
+      </div>
       <div className="flex-1 space-y-4 overflow-y-auto pr-4">
         {!isSessionActive ? (
           <p className="text-sm text-secondary-500 dark:text-dark-text-secondary">Start the session to enable tools.</p>
@@ -466,6 +558,9 @@ export default function ToolPanel({
         {/* Add the webhook manager component */}
         <WebhookManager />
       </div>
+      
+      {/* Add the ClipboardManager at the end */}
+      <ClipboardManager />
     </section>
   );
 }
