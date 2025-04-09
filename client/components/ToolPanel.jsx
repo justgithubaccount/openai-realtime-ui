@@ -389,9 +389,9 @@ export default function ToolPanel({
   };
 
   return (
-    <section className="h-full w-full flex flex-col gap-4 p-4">
+    <section className="h-full w-full flex flex-col gap-4 p-5">
       <h2 className="flex-shrink-0 text-lg font-semibold text-secondary-800 dark:text-dark-text border-b border-secondary-200 dark:border-dark-border pb-2">Tools Panel</h2>
-      <div className="flex-1 space-y-4 overflow-y-auto">
+      <div className="flex-1 space-y-4 overflow-y-auto pr-4">
         {!isSessionActive ? (
           <p className="text-sm text-secondary-500 dark:text-dark-text-secondary">Start the session to enable tools.</p>
         ) : !toolsAdded ? (

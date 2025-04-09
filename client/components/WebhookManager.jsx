@@ -411,9 +411,9 @@ export default function WebhookManager() {
   };
 
   return (
-    <div className="mb-4 border-t border-secondary-200 dark:border-dark-border pt-4 mt-4">
+    <div className="mb-4 border-t border-secondary-200 dark:border-dark-border pt-4 mt-4 pr-1">
       <div 
-        className="flex items-center justify-between cursor-pointer mb-2 pr-6" 
+        className="flex items-center justify-between cursor-pointer mb-2 pr-4" 
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <h2 className="text-xl font-semibold text-secondary-800 dark:text-dark-text flex-1">
