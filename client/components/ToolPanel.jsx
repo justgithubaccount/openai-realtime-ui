@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import { tools, getAllToolDefinitions } from '../lib/tools'; // Import from registry
 import WebhookManager from './WebhookManager'; // Import the webhook manager
 import ClipboardManager from './ClipboardManager'; // Import the clipboard manager
+import ToolCallHistory from './ToolCallHistory'; // Import the tool call history component
 
 // --- Lazy loaded SyntaxHighlighter (Keep this) ---
 const SyntaxHighlighter = lazy(() =>
@@ -500,6 +501,62 @@ export default function ToolPanel({
     }
   }, [isSessionActive, events, toolsAdded, sendClientEvent, setToolsAdded, setActiveToolCall, sessionUpdatePayload, envVars, lastSentEnvHash]);
 
+  // Function to add to tool call history
+  const addToToolCallHistory = (toolCall, result, status) => {
+    // Extract method and endpoint for API calls
+    let method = '';
+    let endpoint = '';
+    
+    // Try to extract method and endpoint info for webhook calls
+    if (toolCall.name === 'webhook_call') {
+      try {
+        const args = JSON.parse(toolCall.arguments || '{}');
+        method = args.method || 'GET';
+        endpoint = args.endpoint_key || '';
+        
+        // Try to extract endpoint from result if available
+        if (result?.data?.endpoint) {
+          endpoint = result.data.endpoint;
+        }
+      } catch (e) {
+        console.error('Error extracting webhook details:', e);
+      }
+    }
+    
+    const newEntry = {
+      id: Date.now(),
+      toolName: toolCall.name,
+      status: status, // 'success' or 'error'
+      arguments: JSON.parse(toolCall.arguments || '{}'),
+      result: result?.data || result,
+      timestamp: new Date().toLocaleString(),
+      method,
+      endpoint
+    };
+    
+    // Directly update localStorage instead of using state
+    try {
+      if (typeof window !== 'undefined') {
+        // Get existing history
+        const saved = localStorage.getItem('toolCallHistory');
+        const history = saved ? JSON.parse(saved) : [];
+        
+        // Add new entry to the front
+        const updated = [newEntry, ...history];
+        
+        // Save limited history back to localStorage
+        localStorage.setItem('toolCallHistory', JSON.stringify(updated.slice(0, 50)));
+        
+        // Dispatch a custom event to notify the ToolCallHistory component
+        if (typeof window.dispatchEvent === 'function') {
+          window.dispatchEvent(new CustomEvent('toolcall-history-updated'));
+        }
+      }
+    } catch (e) {
+      console.error('Error saving tool call history:', e);
+    }
+  };
+
   // Effect to handle incoming function calls from the AI
   useEffect(() => {
     const latestEvent = events[0];
@@ -555,9 +612,31 @@ export default function ToolPanel({
             try {
               const parsedContent = JSON.parse(result.content);
               setToolResult({ type: toolName, data: parsedContent }); // Store parsed data for display
+              
+              // Check for error indicators in both parsed content and raw string
+              const isError = (
+                // Check for common error patterns in parsed objects
+                (typeof parsedContent === 'object' && parsedContent.error !== undefined) ||
+                (typeof parsedContent === 'object' && parsedContent.status === 'error') ||
+                // For webhook calls, check for any error indication in content
+                (toolName === 'webhook_call' && String(result.content).toLowerCase().includes('error'))
+              );
+              
+              // Add to history with appropriate status and the parsed content
+              addToToolCallHistory(functionCall, { data: parsedContent }, isError ? 'error' : 'success');
             } catch (error) {
               console.error(`Failed to parse ${toolName} result content:`, error.message);
               setToolResult({ type: toolName, data: result.content }); // Store as is if parsing fails
+              
+              // Check for error indicators in the raw string
+              const rawContent = String(result.content).toLowerCase();
+              const isRawError = 
+                rawContent.includes('error') || 
+                rawContent.includes('fail') || 
+                rawContent.includes('exception');
+              
+              // Add to history with appropriate status
+              addToToolCallHistory(functionCall, { data: result.content }, isRawError ? 'error' : 'success');
             }
             
             sendResult(result);
@@ -566,6 +645,10 @@ export default function ToolPanel({
             console.error(`${toolName} execution failed:`, error.message);
             const errorData = { message: error.message || `Tool ${toolName} failed` };
             setToolResult({ type: 'error', data: errorData });
+            
+            // Add error to history
+            addToToolCallHistory(functionCall, errorData, 'error');
+            
             sendResult({ status: 'error', content: JSON.stringify(errorData) });
           })
           .finally(() => setIsLoadingTool(false));
@@ -576,6 +659,10 @@ export default function ToolPanel({
         const errorData = { message: `Argument parsing error: ${error.message}` };
         setToolResult({ type: 'error', data: errorData });
         setIsLoadingTool(false);
+        
+        // Add error to history
+        addToToolCallHistory(functionCall, errorData, 'error');
+        
         sendResult({ status: 'error', content: JSON.stringify(errorData) });
       }
     }
@@ -620,6 +707,7 @@ export default function ToolPanel({
         <div className="space-y-4 mb-8">
           <WebhookManager />
           <ClipboardManager />
+          <ToolCallHistory/>
         </div>
       </div>
     </section>
