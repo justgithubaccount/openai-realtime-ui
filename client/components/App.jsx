@@ -37,6 +37,44 @@ export default function App() {
   const [toolsAdded, setToolsAdded] = useState([]);
   const [activeToolCall, setActiveToolCall] = useState(null);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [envVars, setEnvVars] = useState({});
+
+  // Fetch available environment variables for tool configuration
+  useEffect(() => {
+    async function fetchConfig() {
+      try {
+        const response = await fetch('/api/config');
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Received config:", data);
+          
+          // Initialize window.__ENV__ if it doesn't exist
+          if (!window.__ENV__) {
+            window.__ENV__ = {};
+          }
+          
+          // Make available env vars accessible to the tools system
+          // Ensure we're setting each env var as a boolean value
+          const newEnvVars = {};
+          if (data && data.availableEnvVars) {
+            Object.keys(data.availableEnvVars).forEach(key => {
+              window.__ENV__[key] = !!data.availableEnvVars[key];
+              newEnvVars[key] = !!data.availableEnvVars[key];
+            });
+          }
+          
+          // Update state so components can re-render with new env vars
+          setEnvVars(newEnvVars);
+          
+          console.log("Set window.__ENV__ to:", window.__ENV__);
+        }
+      } catch (error) {
+        console.error("Failed to fetch configuration:", error);
+      }
+    }
+    
+    fetchConfig();
+  }, []);
 
   // Add waveform animation style to document head
   useEffect(() => {
@@ -303,6 +341,7 @@ export default function App() {
             setToolsAdded={setToolsAdded}
             activeToolCall={activeToolCall}
             setActiveToolCall={setActiveToolCall}
+            envVars={envVars}
           />
         </aside>
       </main>

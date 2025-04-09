@@ -265,6 +265,26 @@ app.all("/api/proxy", async (req, res) => {
   }
 });
 
+// Add a route to expose which env vars are available (not their values)
+app.get('/api/config', (req, res) => {
+  // Add cache control headers
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  
+  // Create a list of available environment variables (not including their values)
+  const availableEnvVars = {
+    SEARXNG_URL: !!process.env.SEARXNG_URL,
+    // Add other env vars that tools might depend on
+  };
+  
+  console.log("Sending config to client:", { 
+    searxng: !!process.env.SEARXNG_URL,
+    env_vars_present: Object.keys(availableEnvVars).filter(key => availableEnvVars[key])
+  });
+  
+  res.json({ availableEnvVars });
+});
+
 // Render the React client
 app.use("*", async (req, res, next) => {
   const url = req.originalUrl;

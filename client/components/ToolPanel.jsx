@@ -1,4 +1,4 @@
-import { useEffect, useState, lazy, Suspense } from "react";
+import { useEffect, useState, lazy, Suspense, useMemo } from "react";
 import { AlertCircle } from "lucide-react"; // Only need AlertCircle here now
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -256,20 +256,24 @@ export default function ToolPanel({
   setToolsAdded,
   activeToolCall, // The function_call event itself
   setActiveToolCall,
+  envVars, // New prop for environment variables
 }) {
   const [toolResult, setToolResult] = useState(null); // Stores { type: 'search_results'/'error', data: ... }
   const [isLoadingTool, setIsLoadingTool] = useState(false);
 
   // Generate the session update payload only once or when needed
-  const sessionUpdatePayload = {
-      type: "session.update",
-      session: {
-          tools: getAllToolDefinitions(), // Get definitions from registry
-          tool_choice: "auto",
-      },
-  };
+  const sessionUpdatePayload = useMemo(() => ({
+    type: "session.update",
+    session: {
+      tools: getAllToolDefinitions(), // Get definitions from registry
+      tool_choice: "auto",
+    },
+  }), [envVars]); // Re-generate when envVars change
 
-  // Effect to add tools once session starts
+  // Effect to update tools when environment variables change
+  const [lastSentEnvHash, setLastSentEnvHash] = useState('');
+  
+  // Effect to add tools once session starts or when env vars change
   useEffect(() => {
     if (!isSessionActive) {
       setToolsAdded(false);
@@ -278,13 +282,24 @@ export default function ToolPanel({
       setIsLoadingTool(false);
       return;
     }
+    
+    // Create a hash of current env vars to detect real changes
+    const envHash = JSON.stringify(envVars);
+    
+    // Check for session created event
     const sessionCreatedEvent = events.find(e => e.type === 'session.created');
-    if (sessionCreatedEvent && !toolsAdded) {
-      console.log("Session created, sending tool definitions...");
+    const isSessionNew = sessionCreatedEvent && !toolsAdded;
+    
+    // Only send updates if:
+    // 1. A new session is starting, OR
+    // 2. Env vars changed and are different from what we last sent
+    if (isSessionNew || (Object.keys(envVars).length > 0 && envHash !== lastSentEnvHash)) {
+      console.log("Updating tool definitions - new session or env vars changed");
       sendClientEvent(sessionUpdatePayload);
       setToolsAdded(true);
+      setLastSentEnvHash(envHash);
     }
-  }, [isSessionActive, events, toolsAdded, sendClientEvent, setToolsAdded, setActiveToolCall, sessionUpdatePayload]);
+  }, [isSessionActive, events, toolsAdded, sendClientEvent, setToolsAdded, setActiveToolCall, sessionUpdatePayload, envVars, lastSentEnvHash]);
 
   // Effect to handle incoming function calls from the AI
   useEffect(() => {
@@ -294,7 +309,7 @@ export default function ToolPanel({
       const callId = functionCall.call_id;
       const toolName = functionCall.name;
 
-      // Prevent re-processing the same active call
+      // Prevent re-processing the same active call - NEED TO LOOK AT - IF AI FAILS TO USE WE WANT IT TO TRY AGAIN AND SOMETIMES IT DOESNT LIKE USING A WEBHOOK
       if (!callId || activeToolCall?.call_id === callId) return;
 
       // Find the tool in our registry

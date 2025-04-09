@@ -234,7 +234,9 @@ export const tools = {
     // React component used to render the output in ToolPanel
     // We'll define the actual component in ToolPanel for simplicity for now,
     // but ideally, it could be imported here too.
-    OutputComponent: 'ColorPaletteOutput', 
+    OutputComponent: 'ColorPaletteOutput',
+    // No env vars required for this tool
+    requiredEnvVars: [], 
   },
 
   // --- Web Search Tool ---
@@ -284,7 +286,9 @@ export const tools = {
       }
     },
     // React component used to render the output
-    OutputComponent: 'WebSearchResultsOutput', 
+    OutputComponent: 'WebSearchResultsOutput',
+    // This tool requires SEARXNG_URL to be defined in the environment
+    requiredEnvVars: ['SEARXNG_URL'], 
   },
 
   // --- Universal Webhook Tool ---
@@ -294,7 +298,7 @@ export const tools = {
       type: "function",
       name: "webhook_call",
       description: "Make a call to a user-configured webhook endpoint to trigger actions or retrieve information from external services. IMPORTANT: For POST requests, you MUST include a payload object with all required fields described in the endpoint's description. The following endpoints are available: " + 
-        (typeof localStorage !== 'undefined' ? 
+        (typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? 
           Object.keys(JSON.parse(localStorage.getItem('webhookEndpoints') || '{}')).join(', ') : 
           '[endpoints will be available at runtime]') +
         "\n\nImportant Note: Search endpoints require a payload with a 'query' field containing the search term.",
@@ -314,7 +318,7 @@ export const tools = {
           endpoint_key: {
             type: "string",
             description: "Key name of the saved endpoint to use. Must match one of the available endpoints exactly: " + 
-              (typeof localStorage !== 'undefined' ? 
+              (typeof window !== 'undefined' && typeof localStorage !== 'undefined' ? 
                 Object.keys(JSON.parse(localStorage.getItem('webhookEndpoints') || '{}')).join(', ') : 
                 '[endpoints will be available at runtime]'),
           }
@@ -322,6 +326,9 @@ export const tools = {
         required: ["endpoint_key"],
       },
     },
+    // No specific environment variables needed for webhook_call as it's based on user-configured endpoints
+    requiredEnvVars: [],
+    
     // Execution logic
     execute: async (args) => {
       try {
@@ -466,11 +473,59 @@ export const tools = {
   // example_tool: {
   //   definition: { ... },
   //   execute: async (args) => { ... },
-  //   OutputComponent: 'ExampleToolOutput', 
+  //   OutputComponent: 'ExampleToolOutput',
+  //   requiredEnvVars: ['EXAMPLE_API_KEY'],
   // },
+};
+
+// Check if required environment variables are set for a tool
+const isToolEnabled = (tool) => {
+  // During server-side rendering, consider all tools enabled
+  // This will be refined when the client loads
+  if (typeof window === 'undefined') {
+    console.log(`SSR: Temporarily enabling ${tool.definition.name}`);
+    return true;
+  }
+  
+  if (!tool.requiredEnvVars || tool.requiredEnvVars.length === 0) {
+    console.log(`${tool.definition.name}: No env vars required`);
+    return true; // Tool doesn't require any env vars
+  }
+  
+  // For client-side, we'll need to check if the server has exposed these env vars
+  let availableEnvVars = [];
+  
+  try {
+    // For client-side, we can check window.__ENV__ if server exposes it
+    const envVars = window.__ENV__ || {};
+    // Only include env vars that are actually true (available)
+    availableEnvVars = Object.keys(envVars).filter(key => envVars[key] === true);
+    console.log(`${tool.definition.name}: Checking required env vars:`, tool.requiredEnvVars);
+    console.log(`${tool.definition.name}: Available env vars:`, availableEnvVars);
+  } catch (e) {
+    console.warn(`${tool.definition.name}: Could not access environment variables:`, e);
+    return false;
+  }
+  
+  // Check if all required env vars are available
+  const enabled = tool.requiredEnvVars.every(varName => availableEnvVars.includes(varName));
+  console.log(`${tool.definition.name}: Enabled = ${enabled}`);
+  return enabled;
 };
 
 // Helper to get all tool definitions for the session update
 export const getAllToolDefinitions = () => {
-  return Object.values(tools).map(tool => tool.definition);
+  try {
+    // Filter tools to only include those with all required env vars available
+    const enabledTools = Object.values(tools).filter(isToolEnabled);
+    if (typeof window !== 'undefined') { // Only log in browser environment
+      console.log(`Enabled tools: ${enabledTools.map(t => t.definition.name).join(', ')}`);
+    }
+    
+    return enabledTools.map(tool => tool.definition);
+  } catch (error) {
+    // Fallback in case of any errors during filtering
+    console.warn("Error determining enabled tools:", error);
+    return Object.values(tools).map(tool => tool.definition);
+  }
 }; 
