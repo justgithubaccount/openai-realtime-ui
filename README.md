@@ -12,6 +12,8 @@ A feature-rich web application for interacting with OpenAI's Realtime API, featu
 - 🔍 Integrated web search capability
 - 🪝 Universal webhook system to connect any API
 - 🎨 Color palette generation tool
+- 📋 Clipboard manager for saving and organizing information
+- 🕒 Current date and time in multiple formats and timezones
 - 🌐 Automatic proxy routing for external APIs (avoids CORS issues)
 - 🎭 Dark/light mode themes
 
@@ -117,6 +119,8 @@ This application features an extensible tools system that allows the AI to perfo
 - **Web Search**: Search the web for current information
 - **Color Palette**: Generate color schemes based on themes
 - **Webhook Call**: Universal tool to connect with any external API
+- **Current DateTime**: Get precise date and time in various formats and timezones
+- **Clipboard Manager**: Save and manage text snippets for easy recall and organization
 
 ### Webhooks Manager
 
@@ -169,6 +173,64 @@ Auth Method: Basic Auth
 Username: your_username
 Password: your_password
 ```
+
+### Current DateTime Tool
+
+The Current DateTime tool provides precise time information in various formats and timezones. This is particularly useful for:
+
+- Getting the exact current time in different timezones
+- Formatting dates for various purposes (human-readable, ISO, UNIX timestamp)
+- Including timestamps in documents or data analysis
+- Time-sensitive tasks where accuracy is important
+
+#### Using the Current DateTime Tool
+
+The AI can retrieve time information using the following parameters:
+
+- **Format**: Choose from several time formats
+  - `iso`: ISO 8601 format (default)
+  - `human`: Readable format with day, date, and time
+  - `unix`: UNIX timestamp (seconds since epoch)
+  - `date`: Date only in long format
+  - `time`: Time only with timezone
+
+- **Timezone**: Select from common timezones
+  - `local`: Browser's local timezone (default)
+  - `utc`: Coordinated Universal Time
+  - `est`: Eastern Standard Time (US)
+  - `cst`: Central Standard Time (US)
+  - `mst`: Mountain Standard Time (US)
+  - `pst`: Pacific Standard Time (US)
+
+Example prompts:
+- "What's the current time in UTC?"
+- "Give me the current date and time in human-readable format"
+- "I need a UNIX timestamp for right now"
+
+### Clipboard Manager
+
+The Clipboard Manager provides a convenient way to save and organize text content during your conversations with the AI. This feature is particularly useful for:
+
+- Saving important information for later reference
+- Collecting multiple pieces of information during a session
+- Organizing research findings, code snippets, or summaries
+
+#### Using the Clipboard Manager
+
+The AI can interact with the clipboard using the following commands:
+
+- **Save text**: `clipboard_manager` with `save` action
+- **List saved items**: `clipboard_manager` with `list` action 
+- **Get a specific entry**: `clipboard_manager` with `get` action and an entry ID
+- **Delete an entry**: `clipboard_manager` with `delete` action and an entry ID
+- **Clear all entries**: `clipboard_manager` with `clear` action
+
+All clipboard entries are stored locally in your browser and persist between sessions. You can also export and import your clipboard history for backup or transfer to another device.
+
+Example prompts:
+- "Save this research summary to the clipboard"
+- "Show me all the items in my clipboard"
+- "Get the information I saved earlier about climate change"
 
 ## Advanced Features
 
