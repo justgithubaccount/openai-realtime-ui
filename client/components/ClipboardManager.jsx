@@ -93,14 +93,27 @@ export default function ClipboardManager() {
   // Save entries to localStorage whenever they change from within this component
   useEffect(() => {
     // Only save if this component modified the entries (not when loaded from storage)
-    const currentStorageData = localStorage.getItem('clipboardHistory') || '[]';
-    const currentStorageEntries = JSON.parse(currentStorageData);
-    
-    if (JSON.stringify(currentStorageEntries) !== JSON.stringify(clipboardEntries)) {
+    if (clipboardEntries.length > 0 || currentEntriesRef.current.length > 0) {
       localStorage.setItem('clipboardHistory', JSON.stringify(clipboardEntries));
       currentEntriesRef.current = clipboardEntries;
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('clipboard-updated', {
+        detail: { action: 'update' }
+      }));
     }
   }, [clipboardEntries]);
+  
+  // Force a sync with localStorage on component mount
+  useEffect(() => {
+    // Load clipboard data from storage on mount
+    loadEntriesFromStorage();
+    
+    // Ensure the storage is initialized if empty
+    if (!localStorage.getItem('clipboardHistory')) {
+      localStorage.setItem('clipboardHistory', '[]');
+    }
+  }, []);
   
   // Handler for deleting an entry
   const handleDelete = (id) => {

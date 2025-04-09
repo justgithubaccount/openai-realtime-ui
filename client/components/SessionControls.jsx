@@ -162,9 +162,10 @@ export default function SessionControls({
   sendTextMessage,
   serverEvents,
   isSessionActive,
+  className = "",
 }) {
   return (
-    <div className="flex gap-4 border-t-2 border-gray-200 dark:border-gray-700 h-full rounded-md">
+    <div className={`flex gap-4 h-full rounded-md ${className}`}>
       {isSessionActive ? (
         <SessionActive
           stopSession={stopSession}

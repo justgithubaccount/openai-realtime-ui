@@ -630,6 +630,11 @@ export const tools = {
             // Save back to localStorage (limit to 50 entries)
             localStorage.setItem('clipboardHistory', JSON.stringify(clipboardHistory.slice(0, 50)));
             
+            // Dispatch event to update UI
+            window.dispatchEvent(new CustomEvent('clipboard-updated', {
+              detail: { action: 'save', entry: newEntry }
+            }));
+            
             result = {
               success: true,
               message: "Text saved to clipboard",
@@ -664,6 +669,12 @@ export const tools = {
             
           case 'clear':
             localStorage.setItem('clipboardHistory', '[]');
+            
+            // Dispatch event to update UI
+            window.dispatchEvent(new CustomEvent('clipboard-updated', {
+              detail: { action: 'clear' }
+            }));
+            
             result = {
               success: true,
               message: "Clipboard history cleared"
@@ -681,6 +692,12 @@ export const tools = {
             }
             
             localStorage.setItem('clipboardHistory', JSON.stringify(newHistory));
+            
+            // Dispatch event to update UI
+            window.dispatchEvent(new CustomEvent('clipboard-updated', {
+              detail: { action: 'delete', entry_id: args.entry_id }
+            }));
+            
             result = {
               success: true,
               message: `Entry with ID ${args.entry_id} deleted`,
