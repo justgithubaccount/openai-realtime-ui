@@ -56,10 +56,18 @@ function ColorPaletteOutput({ toolCall }) { // Changed prop name for consistency
 }
 
 function WebSearchResultsOutput({ toolCall, toolResult, isLoading }) {
-  const { query } = JSON.parse(toolCall.arguments || '{}');
+  const { query } = toolCall ? JSON.parse(toolCall.arguments || '{}') : {};
+  const [showRawJson, setShowRawJson] = useState(false);
   
   // Parse the results based on the actual structure
   let results = [];
+  
+  // Store the raw JSON for the toggle view
+  const rawJsonData = toolResult ? (
+    typeof toolResult.data === 'string' 
+      ? toolResult.data 
+      : JSON.stringify(toolResult.data, null, 2)
+  ) : '';
   
   if (toolResult) {
     try {
@@ -91,10 +99,21 @@ function WebSearchResultsOutput({ toolCall, toolResult, isLoading }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-md font-semibold text-secondary-700 dark:text-dark-text">Web Search: "{query}"</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-md font-semibold text-secondary-700 dark:text-dark-text">Web Search: "{query}"</h3>
+        {toolResult && !isLoading && (
+          <button 
+            className="text-xs px-2 py-0.5 bg-secondary-100 dark:bg-dark-surface hover:bg-secondary-200 dark:hover:bg-dark-hover rounded"
+            onClick={() => setShowRawJson(!showRawJson)}
+          >
+            {showRawJson ? 'Hide Raw' : 'Show Raw'}
+          </button>
+        )}
+      </div>
+      
       {isLoading ? (
         <div className="text-sm text-secondary-500 dark:text-dark-text-secondary">Searching...</div>
-      ) : results && results.length > 0 ? (
+      ) : !showRawJson && results && results.length > 0 ? (
         <ul className="space-y-2">
           {results.map((result, index) => (
             <li key={index} className="text-sm border-b border-secondary-200 dark:border-dark-border pb-2 last:border-b-0">
@@ -107,16 +126,25 @@ function WebSearchResultsOutput({ toolCall, toolResult, isLoading }) {
             </li>
           ))}
         </ul>
-      ) : (
+      ) : !showRawJson ? (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-100 dark:border-yellow-800/30 p-3 rounded text-sm">
           <p className="text-secondary-700 dark:text-dark-text-secondary">No results found. The search might have encountered an error or returned no matches.</p>
           <p className="text-secondary-600 dark:text-dark-text-secondary mt-2 text-xs">Suggestion: Try a different search query or check if the search endpoint is working correctly.</p>
         </div>
+      ) : null}
+      
+      {/* Raw JSON display */}
+      {showRawJson && toolResult && (
+        <div className="rounded border border-secondary-200 dark:border-dark-border bg-gray-50 dark:bg-gray-900 p-2 max-h-96 overflow-auto text-xs font-mono whitespace-pre-wrap">
+          <div className="text-xs font-semibold text-secondary-500 dark:text-secondary-400 mb-1">Raw Response:</div>
+          {rawJsonData}
+        </div>
       )}
-      <details className="text-xs text-secondary-500 dark:text-dark-text-secondary">
+      
+      <details className="text-xs text-secondary-500 dark:text-dark-text-secondary mt-2">
         <summary className="cursor-pointer">View arguments</summary>
         <pre className="mt-1 p-2 bg-secondary-100 dark:bg-dark-surface-alt rounded overflow-x-auto">
-          {JSON.stringify(toolCall.arguments, null, 2)}
+          {JSON.stringify(toolCall?.arguments ? JSON.parse(toolCall.arguments) : {}, null, 2)}
         </pre>
       </details>
     </div>
@@ -125,6 +153,7 @@ function WebSearchResultsOutput({ toolCall, toolResult, isLoading }) {
 
 function WebhookResultOutput({ toolCall, toolResult }) {
   const { endpoint_key } = toolCall ? JSON.parse(toolCall.arguments || '{}') : {};
+  const [showRawJson, setShowRawJson] = useState(false);
   
   // Skip rendering if no result yet
   if (!toolResult) {
@@ -143,6 +172,11 @@ function WebhookResultOutput({ toolCall, toolResult }) {
       </div>
     );
   }
+  
+  // Store the raw JSON for the toggle view
+  const rawJsonData = typeof toolResult.data === 'string' 
+    ? toolResult.data 
+    : JSON.stringify(toolResult.data, null, 2);
   
   // Parse the webhook response based on the structure
   let result = null;
@@ -215,14 +249,41 @@ function WebhookResultOutput({ toolCall, toolResult }) {
             {status} {statusText}
           </div>
         </div>
-        {endpoint && <div className="text-xs text-secondary-500 dark:text-dark-text-secondary">
-          {method} request to {endpoint}
-        </div>}
+        <div className="flex items-center gap-2">
+          {endpoint && <div className="text-xs text-secondary-500 dark:text-dark-text-secondary">
+            {method} request to {endpoint}
+          </div>}
+          <button 
+            className="text-xs px-2 py-0.5 bg-secondary-100 dark:bg-dark-surface hover:bg-secondary-200 dark:hover:bg-dark-hover rounded"
+            onClick={() => setShowRawJson(!showRawJson)}
+          >
+            {showRawJson ? 'Hide Raw' : 'Show Raw'}
+          </button>
+        </div>
       </div>
       
-      <div className="rounded bg-secondary-50 dark:bg-dark-surface-alt p-2 max-h-96 overflow-auto text-xs font-mono whitespace-pre-wrap">
-        {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
-      </div>
+      {/* Formatted result display */}
+      {!showRawJson && (
+        <div className="rounded bg-secondary-50 dark:bg-dark-surface-alt p-2 max-h-96 overflow-auto text-xs font-mono whitespace-pre-wrap">
+          {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
+        </div>
+      )}
+      
+      {/* Raw JSON display */}
+      {showRawJson && (
+        <div className="rounded border border-secondary-200 dark:border-dark-border bg-gray-50 dark:bg-gray-900 p-2 max-h-96 overflow-auto text-xs font-mono whitespace-pre-wrap">
+          <div className="text-xs font-semibold text-secondary-500 dark:text-secondary-400 mb-1">Raw Response:</div>
+          {rawJsonData}
+        </div>
+      )}
+      
+      {/* View arguments section, similar to WebSearchResultsOutput */}
+      <details className="text-xs text-secondary-500 dark:text-dark-text-secondary mt-2">
+        <summary className="cursor-pointer">View arguments</summary>
+        <pre className="mt-1 p-2 bg-secondary-100 dark:bg-dark-surface-alt rounded overflow-x-auto">
+          {JSON.stringify(toolCall?.arguments ? JSON.parse(toolCall.arguments) : {}, null, 2)}
+        </pre>
+      </details>
     </div>
   );
 }

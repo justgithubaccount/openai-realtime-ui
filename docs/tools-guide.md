@@ -157,11 +157,22 @@ Add a React component to display your tool's results. Find the OutputComponents 
 // Existing components...
 
 function MyNewToolOutput({ toolCall, toolResult, isLoading }) {
+  // Include useState for the raw JSON toggle
+  const [showRawJson, setShowRawJson] = useState(false);
+  
   // Parse arguments from the tool call
   const args = JSON.parse(toolCall.arguments || '{}');
   
   // Get results from toolResult
   let results = null;
+  
+  // Store the raw JSON for the toggle view
+  const rawJsonData = toolResult ? (
+    typeof toolResult.data === 'string' 
+      ? toolResult.data 
+      : JSON.stringify(toolResult.data, null, 2)
+  ) : '';
+  
   if (toolResult && !isLoading) {
     try {
       if (typeof toolResult.data === 'string') {
@@ -176,18 +187,44 @@ function MyNewToolOutput({ toolCall, toolResult, isLoading }) {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-md font-semibold">My Tool: {args.param1}</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-md font-semibold">My Tool: {args.param1}</h3>
+        
+        {/* Add a toggle button for showing raw JSON data */}
+        {toolResult && !isLoading && (
+          <button 
+            className="text-xs px-2 py-0.5 bg-secondary-100 dark:bg-dark-surface hover:bg-secondary-200 dark:hover:bg-dark-hover rounded"
+            onClick={() => setShowRawJson(!showRawJson)}
+          >
+            {showRawJson ? 'Hide Raw' : 'Show Raw'}
+          </button>
+        )}
+      </div>
       
       {isLoading ? (
         <div className="text-sm text-secondary-500 animate-pulse">Loading results...</div>
-      ) : results ? (
+      ) : !showRawJson && results ? (
         <div className="bg-secondary-50 dark:bg-dark-surface-alt p-3 rounded">
-          {/* Display your results here */}
+          {/* Display your formatted results here */}
           <pre className="text-sm overflow-auto">{JSON.stringify(results, null, 2)}</pre>
         </div>
-      ) : (
-        <div className="text-sm text-secondary-500">No results available</div>
+      ) : null}
+      
+      {/* Raw JSON display */}
+      {showRawJson && toolResult && (
+        <div className="rounded border border-secondary-200 dark:border-dark-border bg-gray-50 dark:bg-gray-900 p-2 max-h-96 overflow-auto text-xs font-mono whitespace-pre-wrap">
+          <div className="text-xs font-semibold text-secondary-500 dark:text-secondary-400 mb-1">Raw Response:</div>
+          {rawJsonData}
+        </div>
       )}
+      
+      {/* Always include a View arguments section */}
+      <details className="text-xs text-secondary-500 dark:text-dark-text-secondary mt-2">
+        <summary className="cursor-pointer">View arguments</summary>
+        <pre className="mt-1 p-2 bg-secondary-100 dark:bg-dark-surface-alt rounded overflow-x-auto">
+          {JSON.stringify(toolCall?.arguments ? JSON.parse(toolCall.arguments) : {}, null, 2)}
+        </pre>
+      </details>
     </div>
   );
 }
@@ -344,6 +381,109 @@ app.get('/api/config', (req, res) => {
   };
   // ...
 });
+```
+
+## Standardized UI Features for Tool Outputs
+
+To maintain a consistent user experience across all tools, your tool output components should implement the following UI features:
+
+### 1. Raw JSON Toggle
+
+All tool outputs should include a toggle button to show the raw response data. This is essential for debugging and helps users understand exactly what data was returned.
+
+```javascript
+function MyToolOutput({ toolCall, toolResult, isLoading }) {
+  // Add state for the raw toggle
+  const [showRawJson, setShowRawJson] = useState(false);
+  
+  // Store the raw data for display
+  const rawJsonData = toolResult ? (
+    typeof toolResult.data === 'string' 
+      ? toolResult.data 
+      : JSON.stringify(toolResult.data, null, 2)
+  ) : '';
+  
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-md font-semibold">Tool Name</h3>
+        
+        {/* Raw JSON toggle button */}
+        {toolResult && !isLoading && (
+          <button 
+            className="text-xs px-2 py-0.5 bg-secondary-100 dark:bg-dark-surface hover:bg-secondary-200 dark:hover:bg-dark-hover rounded"
+            onClick={() => setShowRawJson(!showRawJson)}
+          >
+            {showRawJson ? 'Hide Raw' : 'Show Raw'}
+          </button>
+        )}
+      </div>
+      
+      {/* Conditional rendering based on toggle state */}
+      {!showRawJson ? (
+        /* Formatted output */
+      ) : (
+        <div className="rounded border border-secondary-200 dark:border-dark-border bg-gray-50 dark:bg-gray-900 p-2 max-h-96 overflow-auto text-xs font-mono whitespace-pre-wrap">
+          <div className="text-xs font-semibold text-secondary-500 dark:text-secondary-400 mb-1">Raw Response:</div>
+          {rawJsonData}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### 2. View Arguments Section
+
+All tool outputs should include a collapsible "View arguments" section that displays the exact arguments the AI passed to the tool. This helps with debugging and understanding the AI's intent.
+
+```javascript
+{/* View arguments section */}
+<details className="text-xs text-secondary-500 dark:text-dark-text-secondary mt-2">
+  <summary className="cursor-pointer">View arguments</summary>
+  <pre className="mt-1 p-2 bg-secondary-100 dark:bg-dark-surface-alt rounded overflow-x-auto">
+    {JSON.stringify(toolCall?.arguments ? JSON.parse(toolCall.arguments) : {}, null, 2)}
+  </pre>
+</details>
+```
+
+### 3. Loading State
+
+All tool outputs should handle the loading state gracefully, showing an appropriate loading indicator:
+
+```javascript
+{isLoading ? (
+  <div className="text-sm text-secondary-500 animate-pulse">
+    Loading results...
+  </div>
+) : (
+  /* Your actual output */
+)}
+```
+
+### 4. Method & Endpoint Display (For API/Webhook Tools)
+
+For tools that call external APIs or webhooks, display the method and endpoint information:
+
+```javascript
+<div className="text-xs text-secondary-500 dark:text-dark-text-secondary">
+  {method} request to {endpoint}
+</div>
+```
+
+### 5. Error Handling
+
+Make sure your component can gracefully handle and display errors:
+
+```javascript
+if (error) {
+  return (
+    <div className="py-2 px-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/30 rounded text-sm text-red-600 dark:text-red-400">
+      <div className="font-medium">Error: {error.message}</div>
+      {error.details && <div className="mt-1 whitespace-pre-wrap">{error.details}</div>}
+    </div>
+  );
+}
 ```
 
 ## Universal Webhook Tool
