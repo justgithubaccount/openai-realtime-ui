@@ -82,31 +82,12 @@ For local development with hot reloading:
 
 3. Start the development container:
    ```bash
-   docker-compose -f docker-compose.dev.yml up -d
+   docker-compose up -d --build
    ```
 
 4. Access the application at http://localhost:3000
 
 The development container mounts your local files, so any changes you make will trigger hot reloading.
-
-### Production Deployment
-
-For production deployment (such as on Coolify):
-
-1. Use the standard Dockerfile (not Dockerfile.dev)
-2. Set environment variables in your deployment platform
-3. The container will build and run the application in production mode
-
-```bash
-# Build the production image
-docker build -t openai-realtime-ui:production .
-
-# Run the production container
-docker run -p 3000:3000 \
-  -e OPENAI_API_KEY=your_key_here \
-  -e OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17 \
-  openai-realtime-ui:production
-```
 
 ### Model Selection
 

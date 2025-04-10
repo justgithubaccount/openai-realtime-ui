@@ -4,12 +4,18 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - SEARXNG_URL=${SEARXNG_URL}
       - OPENAI_REALTIME_MODEL=${OPENAI_REALTIME_MODEL:-gpt-4o-realtime-preview-2024-12-17}
-      - NODE_ENV=production
+      - NODE_ENV=development
+      - PORT=3000
+    volumes:
+      # Mount the entire codebase for hot reloading
+      - ./:/app
+      # Exclude node_modules from volume mounting to use container's modules
+      - /app/node_modules
     restart: unless-stopped 
