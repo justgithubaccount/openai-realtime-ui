@@ -1,4 +1,4 @@
-# OpenAI Realtime UI
+# OpenAI Realtime UI 🎙️
 
 A feature-rich web application for interacting with OpenAI's Realtime API, featuring a flexible tools system and universal webhook integration.
 
