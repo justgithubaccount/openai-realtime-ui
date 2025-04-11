@@ -194,9 +194,27 @@ app.all("/api/proxy", async (req, res) => {
     
     // Copy relevant headers from the original request
     // Don't copy host, origin, etc. which would cause issues
-    const headersToForward = ['content-type', 'accept', 'x-api-key'];
-    headersToForward.forEach(header => {
-      if (req.headers[header]) {
+    const headersToForward = [
+      'content-type', 
+      'accept', 
+      'x-api-key', 
+      'authorization',
+      // Additional auth headers that might be used
+      'x-access-token',
+      'x-auth-token',
+      'api-key',
+      'token',
+      'bearer',
+      'cookie'
+    ];
+    
+    // Forward all headers that match the pattern
+    Object.keys(req.headers).forEach(header => {
+      if (headersToForward.includes(header.toLowerCase()) || 
+          header.toLowerCase().startsWith('x-') || 
+          header.toLowerCase().includes('auth') || 
+          header.toLowerCase().includes('token') ||
+          header.toLowerCase().includes('key')) {
         options.headers[header] = req.headers[header];
       }
     });
