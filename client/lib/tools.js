@@ -245,7 +245,9 @@ export const tools = {
     definition: {
       type: "function",
       name: "web_search",
-      description: "Call this function to search the web for information.",
+      description: "Call this function to search the web for information." + 
+        (typeof window !== 'undefined' && window.__ENV__ && window.__ENV__.SEARXNG_AUTH_ENABLED ? 
+          " (Using authenticated SearXNG instance)" : ""),
       parameters: {
         type: "object",
         strict: true,

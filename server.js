@@ -7,6 +7,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 const apiKey = process.env.OPENAI_API_KEY;
 const searxngUrl = process.env.SEARXNG_URL; 
+const searxngAuthEnabled = process.env.SEARXNG_AUTH_ENABLED === 'true';
+const searxngUser = process.env.SEARXNG_USER;
+const searxngPass = process.env.SEARXNG_PASS;
 const openaiModel = process.env.OPENAI_REALTIME_MODEL || "gpt-4o-realtime-preview-2024-12-17";
 
 // Configure Vite middleware for React client with reduced logging
@@ -143,12 +146,21 @@ app.post("/api/search", async (req, res) => {
     const requestUrl = `${searxngUrl}/search?${searchParams.toString()}`;
     console.log(`Fetching from SearXNG: ${requestUrl}`);
     
-    const searchResponse = await fetch(requestUrl, { 
-      headers: { 
-        'Accept': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-      }
-    });
+    // Build headers with authentication if enabled
+    const headers = { 
+      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+    };
+    
+    // Add basic auth if enabled
+    if (searxngAuthEnabled && searxngUser && searxngPass) {
+      const authString = `${searxngUser}:${searxngPass}`;
+      const base64Auth = Buffer.from(authString).toString('base64');
+      headers['Authorization'] = `Basic ${base64Auth}`;
+      console.log('Using Basic Authentication for SearXNG');
+    }
+    
+    const searchResponse = await fetch(requestUrl, { headers });
     
     if (!searchResponse.ok) {
       throw new Error(`SearXNG request failed with status ${searchResponse.status}: ${await searchResponse.text()}`);
@@ -292,6 +304,7 @@ app.get('/api/config', (req, res) => {
   // Create a list of available environment variables (not including their values)
   const availableEnvVars = {
     SEARXNG_URL: !!process.env.SEARXNG_URL,
+    SEARXNG_AUTH_ENABLED: process.env.SEARXNG_AUTH_ENABLED === 'true',
     // Add other env vars that tools might depend on
   };
   
