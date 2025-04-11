@@ -2,7 +2,7 @@
 
 ## Key Discovery: Proper Function/Tool Result Flow
 
-We discovered that sending function (tool) results to the OpenAI Realtime API requires a specific flow:
+Sending function (tool) results to the OpenAI Realtime API requires a specific flow:
 
 1. First, send the function result using `conversation.item.create`
 2. Then trigger the model to continue with `response.create`
@@ -495,5 +495,3 @@ See the [WebhookManager section](#webhook-manager-component) for details.
 ---
 
 The rest of this documentation covers additional details on the message flow, error handling, and other components of the system.
-
-[original content continues below...]
