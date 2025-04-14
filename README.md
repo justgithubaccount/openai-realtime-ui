@@ -216,7 +216,6 @@ All clipboard entries are stored locally in your browser and persist between ses
 Example prompts:
 - "Save this research summary to the clipboard"
 - "Show me all the items in my clipboard"
-- "Get the information I saved earlier about climate change"
 
 ## Advanced Features
 
