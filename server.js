@@ -72,7 +72,15 @@ app.post("/token", async (req, res) => {
       },
     );
 
+    // const data = await response.json();
     const data = await response.json();
+    console.log("OpenAI Response Status:", response.status);
+    console.log("OpenAI Response Data:", JSON.stringify(data, null, 2));
+    
+    if (!response.ok) {
+      console.error("OpenAI API Error:", data);
+      return res.status(response.status).json(data);
+    }
     // Add the model to the response so client knows which model was used
     data.model = openaiModel;
     res.json(data);
