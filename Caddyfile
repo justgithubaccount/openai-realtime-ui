@@ -1,0 +1,3 @@
+realtime.syncjob.ru {
+    reverse_proxy app:3000
+}
